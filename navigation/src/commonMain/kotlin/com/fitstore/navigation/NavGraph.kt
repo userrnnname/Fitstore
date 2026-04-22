@@ -1,0 +1,99 @@
+package com.fitstore.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.fitstore.admin_panel.AdminPanelScreen
+import com.fitstore.auth.AuthScreen
+import com.fitstore.home.HomeGraphScreen
+import com.fitstore.login.LoginScreen
+import com.fitstore.manage_product.ManageProductScreen
+import com.fitstore.profile.ProfileScreen
+import com.fitstore.register.RegisterScreen
+import com.fitstore.shared.navigation.Screen
+
+@Composable
+fun SetupNavGraph(startDestination: Screen = Screen.Auth) {
+    val navController = rememberNavController()
+    NavHost(
+        navController = navController,
+        startDestination = startDestination
+    ) {
+        composable<Screen.Auth> {
+            AuthScreen(
+                navigateToHome = {
+                    navController.navigate(Screen.HomeGraph) {
+                        popUpTo<Screen.Auth> { inclusive = true }
+                    }
+                },
+                navigateToLogin = {
+                    navController.navigate(Screen.Login)
+                }
+            )
+        }
+        composable<Screen.Login> {
+            LoginScreen(
+                navigateBack = { navController.navigateUp() },
+                navigateToRegister = { navController.navigate(Screen.Register) },
+                navigateToHome = {
+                    navController.navigate(Screen.HomeGraph) {
+                        popUpTo<Screen.Auth> { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable<Screen.Register> {
+            RegisterScreen(
+                navigateBack = { navController.navigateUp() },
+                navigateToHome = {
+                    navController.navigate(Screen.HomeGraph) {
+                        popUpTo<Screen.Auth> { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable<Screen.HomeGraph> {
+            HomeGraphScreen(
+                navigateToAuth = {
+                    navController.navigate(Screen.Auth) {
+                        popUpTo<Screen.HomeGraph> { inclusive = true }
+                    }
+                },
+                navigateToProfile = {
+                    navController.navigate(Screen.Profile)
+                },
+                navigateToAdminPanel = {
+                    navController.navigate(Screen.AdminPanel)
+                }
+            )
+        }
+        composable<Screen.Profile> {
+            ProfileScreen(
+                navigateBack = {
+                    navController.navigateUp()
+                }
+            )
+        }
+        composable<Screen.AdminPanel> {
+            AdminPanelScreen(
+                navigateBack = {
+                    navController.navigateUp()
+                },
+                navigateToManageProduct = { id ->
+                    navController.navigate(Screen.ManageProduct(id = id))
+                }
+            )
+        }
+        composable<Screen.ManageProduct> {
+            val id = it.toRoute<Screen.ManageProduct>().id
+            ManageProductScreen(
+                id = id,
+                navigateBack = {
+                    navController.navigateUp()
+                }
+            )
+        }
+    }
+}

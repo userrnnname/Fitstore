@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "628979041343",
+    "project_id": "fitstore-493514",
+    "storage_bucket": "fitstore-493514.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:628979041343:android:42ac16a744d9598d80648a",
+        "android_client_info": {
+          "package_name": "com.android.fitstore"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "628979041343-p844c3l84e94jhdp8nk1l4p1kengspaf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUaodA42juz49s6vfqKdOBXAXQ524vfEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "628979041343-p844c3l84e94jhdp8nk1l4p1kengspaf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
