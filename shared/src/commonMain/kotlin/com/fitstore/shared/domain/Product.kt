@@ -6,6 +6,7 @@ import com.fitstore.shared.CategoryGreen
 import com.fitstore.shared.CategoryPurple
 import com.fitstore.shared.CategoryRed
 import com.fitstore.shared.CategoryYellow
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -14,6 +15,7 @@ import kotlin.time.ExperimentalTime
 @Serializable
 data class Product(
     val id: String,
+    @SerialName("createdAt")
     val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
     val title: String,
     val description: String,
@@ -22,8 +24,11 @@ data class Product(
     val flavors: List<String>? = null,
     val weight: Int? = null,
     val price: Double,
+    @SerialName("isPopular")
     val isPopular: Boolean = false,
+    @SerialName("isDiscounted")
     val isDiscounted: Boolean = false,
+    @SerialName("isNew")
     val isNew: Boolean = false
 )
 
@@ -32,23 +37,23 @@ enum class ProductCategory(
     val color: Color
 ) {
     Protein(
-        title = "Протеин",
+        title = "ПРОТЕИН",
         color = CategoryYellow
     ),
     Creatine(
-        title = "Креатин",
+        title = "КРЕАТИН",
         color = CategoryBlue
     ),
     PreWorkout(
-        title = "Перед тренировкой",
+        title = "ПЕРЕД ТРЕНИРОВКОЙ",
         color = CategoryGreen
     ),
     Gainers(
-        title = "Гейнеры",
+        title = "ГЕЙНЕРЫ",
         color = CategoryPurple
     ),
     Accessories(
-        title = "Аксессуары",
+        title = "АКСЕССУАРЫ",
         color = CategoryRed
     )
 }

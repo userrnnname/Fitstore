@@ -1,6 +1,6 @@
 package com.fitstore.data
 
-import com.fitstore.data.com.fitstore.data.domain.ProductRepository
+import com.fitstore.data.domain.ProductRepository
 import com.fitstore.shared.domain.Product
 import com.fitstore.shared.domain.ProductCategory
 import com.fitstore.shared.util.RequestState
@@ -19,10 +19,10 @@ class ProductRepositoryImpl(
     override fun readDiscountedProducts(): Flow<RequestState<List<Product>>> = flow {
         emit(RequestState.Loading)
         try {
-            val response = supabase.postgrest["product"]
+            val response = supabase.postgrest["products"]
                 .select {
                     filter {
-                        Product::isDiscounted eq true
+                        eq("\"isDiscounted\"", true)
                     }
                 }
                 .decodeList<Product>()
@@ -36,10 +36,10 @@ class ProductRepositoryImpl(
     override fun readNewProducts(): Flow<RequestState<List<Product>>> = flow {
         emit(RequestState.Loading)
         try {
-            val response = supabase.postgrest["product"]
+            val response = supabase.postgrest["products"]
                 .select {
                     filter {
-                        Product::isNew eq true
+                        eq("\"isNew\"", true)
                     }
                 }
                 .decodeList<Product>()
@@ -53,10 +53,10 @@ class ProductRepositoryImpl(
     override fun readProductByIdFlow(id: String): Flow<RequestState<Product>> = flow {
         emit(RequestState.Loading)
         try {
-            val product = supabase.postgrest["product"]
+            val product = supabase.postgrest["products"]
                 .select {
                     filter {
-                        Product::id eq id
+                        eq("id", id)
                     }
                 }.decodeSingle<Product>()
 
@@ -69,10 +69,10 @@ class ProductRepositoryImpl(
     override fun readProductsByIdsFlow(ids: List<String>): Flow<RequestState<List<Product>>> = flow {
         emit(RequestState.Loading)
         try {
-            val response = supabase.postgrest["product"]
+            val response = supabase.postgrest["products"]
                 .select {
                     filter {
-                        Product::id isIn ids
+                        isIn("id", ids)
                     }
                 }
                 .decodeList<Product>()
@@ -86,10 +86,10 @@ class ProductRepositoryImpl(
     override fun readProductsByCategoryFlow(category: ProductCategory): Flow<RequestState<List<Product>>> = flow {
         emit(RequestState.Loading)
         try {
-            val response = supabase.postgrest["product"]
+            val response = supabase.postgrest["products"]
                 .select {
                     filter {
-                        Product::category eq category.name
+                        eq("category", category.name)
                     }
                 }
                 .decodeList<Product>()

@@ -6,6 +6,7 @@ import com.fitstore.shared.domain.Product
 import com.fitstore.shared.util.RequestState
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +31,7 @@ class AdminRepositoryImpl(
             if (getCurrentUserId() == null) return null
             if (byteArray.size > MAX_IMAGE_SIZE_BYTES) return null
 
-            val fileName = Uuid.random().toHexString()
+            val fileName = "${Uuid.random()}.jpg"
             imageRepository.uploadImage(
                 fileName = fileName,
                 byteArray = byteArray,
@@ -65,7 +66,7 @@ class AdminRepositoryImpl(
     ) {
         try {
             if (getCurrentUserId() != null) {
-                supabase.postgrest.from("products").insert(product.copy(title = product.title.lowercase()))
+                supabase.from("products").insert(product.copy(title = product.title.lowercase()))
                 onSuccess()
             } else onError("Пользователь недоступен.")
         } catch (e: Exception) {
@@ -91,7 +92,7 @@ class AdminRepositoryImpl(
         onError: (String) -> Unit
     ) {
         try {
-            supabase.postgrest.from("products").update(
+            supabase.from("products").update(
                 {
                     set("thumbnail", downloadUrl)
                 }
@@ -112,7 +113,7 @@ class AdminRepositoryImpl(
         onError: (String) -> Unit
     ) {
         try {
-            supabase.postgrest.from("products").update(product.copy(title = product.title.lowercase())) {
+            supabase.from("products").update(product.copy(title = product.title.lowercase())) {
                 filter { eq("id", product.id) }
             }
             onSuccess()
@@ -127,7 +128,7 @@ class AdminRepositoryImpl(
         onError: (String) -> Unit
     ) {
         try {
-            supabase.postgrest.from("products").delete {
+            supabase.from("products").delete {
                 filter { eq("id", productId) }
             }
             onSuccess()
@@ -139,9 +140,9 @@ class AdminRepositoryImpl(
     override fun readLastTenProducts(): Flow<RequestState<List<Product>>> = flow {
         emit(RequestState.Loading)
         try {
-            val products = supabase.postgrest.from("products")
+            val products = supabase.from("products")
                 .select {
-                    order("createdAt", Order.DESCENDING)
+                    order("\"createdAt\"", Order.DESCENDING)
                     limit(10)
                 }.decodeList<Product>()
             emit(RequestState.Success(products.map { it.copy(title = it.title.uppercase()) }))
@@ -153,7 +154,7 @@ class AdminRepositoryImpl(
     override fun searchProductsByTitle(searchQuery: String): Flow<RequestState<List<Product>>> = flow {
         emit(RequestState.Loading)
         try {
-            val products = supabase.postgrest.from("products")
+            val products = supabase.from("products")
                 .select {
                     filter { ilike("title", "%${searchQuery.lowercase()}%") }
                 }.decodeList<Product>()

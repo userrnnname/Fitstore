@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,9 +33,11 @@ import com.fitstore.shared.Alpha
 import com.fitstore.shared.BorderIdle
 import com.fitstore.shared.FontSize
 import com.fitstore.shared.IconSecondary
+import com.fitstore.shared.Resources
 import com.fitstore.shared.SurfaceDarker
 import com.fitstore.shared.SurfaceLighter
 import com.fitstore.shared.TextPrimary
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun SignInButton(
@@ -90,7 +93,6 @@ fun SignInButton(
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = buttonText,
                 color = TextPrimary.copy(alpha = textAlpha),

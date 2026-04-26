@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class, ExperimentalTime::class)
 data class ManageProductState(
-    val id: String = Uuid.random().toHexString(),
+    val id: String = Uuid.random().toString(),
     val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
     val title: String = "",
     val description: String = "",
@@ -135,6 +135,7 @@ class ManageProductViewModel(
             adminRepository.createNewProduct(
                 product = Product(
                     id = screenState.id,
+                    createdAt = screenState.createdAt,
                     title = screenState.title,
                     description = screenState.description,
                     thumbnail = screenState.thumbnail,

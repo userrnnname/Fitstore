@@ -1,13 +1,19 @@
 package com.fitstore.data
 
 import com.fitstore.data.domain.CustomerRepository
+import com.fitstore.shared.domain.CartItem
 import com.fitstore.shared.domain.Customer
 import com.fitstore.shared.util.RequestState
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
-import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.filter.FilterOperation
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.realtime.selectAsFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -36,10 +42,10 @@ class CustomerRepositoryImpl(
                 isAdmin = false
             )
 
-            supabase.postgrest.from("customers").insert(customer)
+            supabase.from("customers").insert(customer)
             onSuccess()
         } catch (e: Exception) {
-            onError("Ошибка создания профиля: ${e.message}")
+            onError("Ошибка создания пользователя: ${e.message}")
         }
     }
 
@@ -93,23 +99,27 @@ class CustomerRepositoryImpl(
         }
     }
 
+    @OptIn(SupabaseExperimental::class)
     override fun readCustomerFlow(): Flow<RequestState<Customer>> = flow {
         emit(RequestState.Loading)
+        val userId = getCurrentUserId() ?: return@flow emit(RequestState.Error("Пользователь не авторизован."))
         try {
-            val userId = getCurrentUserId()
-            if (userId != null) {
-                val customer = supabase.postgrest.from("customers")
-                    .select {
-                        filter { eq("id", userId) }
-                    }.decodeSingle<Customer>()
-                emit(RequestState.Success(customer))
-            } else {
-                emit(RequestState.Error("Пользователь не найден."))
-            }
+            supabase.from("customers")
+                .selectAsFlow(
+                    primaryKey = Customer::id,
+                    filter = FilterOperation("id", FilterOperator.EQ, userId)
+                )
+                .collect { customers ->
+                    val customer = customers.find { it.id == userId }
+                    if (customer != null) {
+                        emit(RequestState.Success(customer))
+                    }
+                }
         } catch (e: Exception) {
-            emit(RequestState.Error("Ошибка загрузки профиля: ${e.message}"))
-        }
+                emit(RequestState.Error("Ошибка потока: ${e.message}"))
+            }
     }
+
 
     override suspend fun updateCustomer(
         customer: Customer,
@@ -117,12 +127,108 @@ class CustomerRepositoryImpl(
         onError: (String) -> Unit
     ) {
         try {
-            supabase.postgrest.from("customers").update(customer) {
+            supabase.from("customers").update(customer) {
                 filter { eq("id", customer.id) }
             }
             onSuccess()
         } catch (e: Exception) {
             onError("Ошибка обновления.: ${e.message}")
+        }
+    }
+
+    override suspend fun addItemToCard(
+        cartItem: CartItem,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        try {
+            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
+            val customer = supabase.from("customers")
+                .select { filter { eq("id", userId) } }
+                .decodeSingle<Customer>()
+            val updatedCart = customer.cart + cartItem
+            supabase.from("customers").update(
+                { set("cart", updatedCart) }
+            ) {
+                filter { eq("id", userId) }
+            }
+            onSuccess()
+        } catch (e: Exception) {
+            onError("Ошибка добавления в корзину: ${e.message}")
+        }
+    }
+
+    override suspend fun updateCartItemQuantity(
+        id: String,
+        quantity: Int,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        try {
+            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
+
+            val customer = supabase.from("customers")
+                .select { filter { eq("id", userId) }
+                }.decodeSingle<Customer>()
+
+            val updatedCart = customer.cart.map {
+                if (it.id == id) it.copy(quantity = quantity) else it
+            }
+
+            supabase.from("customers").update(
+                {
+                    set("cart", updatedCart)
+                }
+            ) {
+                filter { eq("id", userId) }
+            }
+            onSuccess()
+        } catch (e: Exception) {
+            onError("Ошибка обновления количества: ${e.message}")
+        }
+    }
+
+    override suspend fun deleteCartItem(
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        try {
+            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
+
+            val customer = supabase.from("customers")
+                .select(Columns.list("cart")) {
+                    filter { eq("id", userId) }
+                }.decodeSingle<Customer>()
+
+            val updatedCart = customer.cart.filterNot { it.id == id }
+
+            supabase.from("customers").update(
+                { set("cart", updatedCart) }
+            ) {
+                filter { eq("id", userId) }
+            }
+            onSuccess()
+        } catch (e: Exception) {
+            onError("Ошибка удаления из корзины: ${e.message}")
+        }
+    }
+
+    override suspend fun deleteAllCartItems(
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        try {
+            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
+
+            supabase.from("customers").update(
+                { set("cart", emptyList<CartItem>()) }
+            ) {
+                filter { eq("id", userId) }
+            }
+            onSuccess()
+        } catch (e: Exception) {
+            onError("Ошибка очистки корзины: ${e.message}")
         }
     }
 

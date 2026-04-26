@@ -1,5 +1,6 @@
 package com.fitstore.data.domain
 
+import com.fitstore.shared.domain.CartItem
 import com.fitstore.shared.domain.Customer
 import com.fitstore.shared.util.RequestState
 import io.github.jan.supabase.auth.user.UserInfo
@@ -37,7 +38,27 @@ interface CustomerRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     )
-
     fun readCustomerFlow(): Flow<RequestState<Customer>>
+
+    suspend fun addItemToCard(
+        cartItem: CartItem,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    )
+    suspend fun updateCartItemQuantity(
+        id: String,
+        quantity: Int,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    )
+    suspend fun deleteCartItem(
+        id: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    )
+    suspend fun deleteAllCartItems(
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    )
     suspend fun signOut(): RequestState<Unit>
 }

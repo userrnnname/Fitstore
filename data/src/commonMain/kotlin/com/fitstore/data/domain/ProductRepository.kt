@@ -1,4 +1,4 @@
-package com.fitstore.data.com.fitstore.data.domain
+package com.fitstore.data.domain
 
 import com.fitstore.shared.domain.Product
 import com.fitstore.shared.domain.ProductCategory

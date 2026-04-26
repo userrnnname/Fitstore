@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +41,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ProductsOverviewScreen(
-    navigateToDetails: (String) -> Unit,
+    navigateToDetails: (String) -> Unit
 ) {
     val viewModel = koinViewModel<ProductsOverviewViewModel>()
     val products by viewModel.products.collectAsState()
@@ -56,73 +57,69 @@ fun ProductsOverviewScreen(
             }?.index
         }
     }
-
     products.DisplayResult(
         onLoading = { LoadingCard(modifier = Modifier.fillMaxSize()) },
         onSuccess = { productList ->
-            AnimatedContent(
-                targetState = productList.distinctBy { it.id }
-            ) { products ->
-                if (products.isNotEmpty()) {
-                    Column {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        LazyRow(
-                            state = listState,
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            itemsIndexed(
-                                items = products
-                                    .filter { it.isNew == true }
-                                    .sortedBy { it.createdAt }
-                                    .take(6),
-                                key = { index, item -> item.id }
-                            ) { index, product ->
-                                val isLarge = index == centeredIndex
-                                val animatedScale by animateFloatAsState(
-                                    targetValue = if (isLarge) 1f else 0.8f,
-                                    animationSpec = tween(300)
-                                )
+            val products = productList.distinctBy { it.id }
 
-                                MainProductCard(
-                                    modifier = Modifier
-                                        .scale(animatedScale)
-                                        .height(300.dp)
-                                        .fillParentMaxWidth(0.6f),
-                                    product = product,
-                                    isLarge = isLarge,
-                                    onClick = { navigateToDetails(it) }
-                                )
+            if (products.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = rememberLazyListState(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    item {
+                        Column {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            LazyRow(
+                                state = listState,
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                itemsIndexed(
+                                    items = products.filter { it.isNew }.sortedBy { it.createdAt }.take(6),
+                                    key = { _, item -> item.id }
+                                ) { index, product ->
+                                    val isLarge = index == centeredIndex
+                                    val animatedScale by animateFloatAsState(
+                                        targetValue = if (isLarge) 1f else 0.8f,
+                                        animationSpec = tween(300)
+                                    )
+                                    MainProductCard(
+                                        modifier = Modifier
+                                            .scale(animatedScale)
+                                            .height(300.dp)
+                                            .fillParentMaxWidth(0.6f),
+                                        product = product,
+                                        isLarge = isLarge,
+                                        onClick = { navigateToDetails(product.id) }
+                                    )
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .alpha(Alpha.HALF),
+                            modifier = Modifier.fillMaxWidth().alpha(Alpha.HALF),
                             text = "Со скидкой",
                             fontSize = FontSize.EXTRA_REGULAR,
                             color = TextPrimary,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        LazyColumn(
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    items(
+                        items = products.filter { it.isDiscounted }.sortedBy { it.createdAt }.take(3),
+                        key = { it.id }
+                    ) { product ->
+                        ProductCard(
                             modifier = Modifier.padding(horizontal = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(
-                                items = products
-                                    .filter { it.isDiscounted == true }
-                                    .sortedBy { it.createdAt }
-                                    .take(3),
-                                key = { it.id }
-                            ) { product ->
-                                ProductCard(
-                                    product = product,
-                                    onClick = { navigateToDetails(it) }
-                                )
-                            }
+                            product = product,
+                            onClick = { navigateToDetails(product.id) }
+                            )
                         }
                     }
                 } else {
@@ -132,7 +129,6 @@ fun ProductsOverviewScreen(
                         subtitle = "Пустой список товаров."
                     )
                 }
-            }
         },
         onError = { message ->
             InfoCard(

@@ -39,6 +39,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.fitstore.cart.CartScreen
+import com.fitstore.categories.CategoriesScreen
 import com.fitstore.home.component.BottomBar
 import com.fitstore.home.component.CustomDrawer
 import com.fitstore.home.domain.BottomBarDestination
@@ -68,7 +70,9 @@ import rememberMessageBarState
 fun HomeGraphScreen(
     navigateToAuth: () -> Unit,
     navigateToProfile: () -> Unit,
-    navigateToAdminPanel: () -> Unit
+    navigateToAdminPanel: () -> Unit,
+    navigateToDetails: (String) -> Unit,
+    navigateToCategorySearch: (String) -> Unit
 ) {
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState()
@@ -163,7 +167,7 @@ fun HomeGraphScreen(
                                     IconButton(onClick = { drawerState = drawerState.opposite() }) {
                                         Icon(
                                             painter = painterResource(Resources.Icon.Close),
-                                            contentDescription = "Иконка закрытия",
+                                            contentDescription = "Закрыть",
                                             tint = IconPrimary
                                         )
                                     }
@@ -171,7 +175,7 @@ fun HomeGraphScreen(
                                     IconButton(onClick = { drawerState = drawerState.opposite() }) {
                                         Icon(
                                             painter = painterResource(Resources.Icon.Menu),
-                                            contentDescription = "Иконка меню",
+                                            contentDescription = "Меню",
                                             tint = IconPrimary
                                         )
                                     }
@@ -215,9 +219,12 @@ fun HomeGraphScreen(
                                 )
                             }
                             composable<Screen.Cart> {
-
+                                CartScreen()
                             }
                             composable<Screen.Categories> {
+                                CategoriesScreen(
+                                    navigateToCategorySearch =  navigateToCategorySearch
+                                )
 
                             }
                         }
@@ -227,6 +234,7 @@ fun HomeGraphScreen(
                                 .padding(all = 12.dp)
                         ) {
                             BottomBar(
+                                customer = customer,
                                 selected = selectedDestination,
                                 onSelect = { destination ->
                                     navController.navigate(destination.screen) {

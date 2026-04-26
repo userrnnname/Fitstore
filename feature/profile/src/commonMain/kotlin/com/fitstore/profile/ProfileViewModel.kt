@@ -6,111 +6,114 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitstore.data.domain.CustomerRepository
-import com.fitstore.shared.domain.Customer
-import com.fitstore.shared.domain.PhoneNumber
+import com.fitstore.data.domain.SupplementRepository
+import com.fitstore.shared.domain.SupplementTrack
 import com.fitstore.shared.util.RequestState
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-
+import kotlin.time.Clock
 
 data class ProfileScreenState(
     val id: String = "",
     val lastName: String = "",
     val firstName: String = "",
     val email: String = "",
-    val city: String? = null,
-    val postalCode: Int? = null,
-    val address: String? = null,
-    val phoneNumber: PhoneNumber? = null
+    val supplements: List<SupplementTrack> = emptyList()
+    //val lastPurchases: List<Product> = emptyList()
 )
 
 class ProfileViewModel(
     private val customerRepository: CustomerRepository,
+    private val supplementRepository: SupplementRepository
 ) : ViewModel() {
     var screenReady: RequestState<Unit> by mutableStateOf(RequestState.Loading)
-    var screenState: ProfileScreenState by mutableStateOf(ProfileScreenState())
+    var screenState by mutableStateOf(ProfileScreenState())
         private set
-    val isFormValid: Boolean get() = with(screenState) {
-        firstName.length in 3..50 &&
-                lastName.length in 3..50 &&
-                (city?.length ?: 0) in 3..50 &&
-                (postalCode?.toString()?.length ?: 0) in 3..8 &&
-                (address?.length ?: 0) in 3..50 &&
-                phoneNumber?.number?.length == 10
-    }
 
-    init {
+    init { readCustomerFlow() }
+
+    private fun readCustomerFlow() {
         viewModelScope.launch {
-            customerRepository.readCustomerFlow().collectLatest { data ->
-                if (data.isSuccess()) {
-                    val fetchedCustomer = data.getSuccessData()
-                    screenState = ProfileScreenState(
-                        id = fetchedCustomer.id,
-                        firstName = fetchedCustomer.firstName,
-                        lastName = fetchedCustomer.lastName,
-                        email = fetchedCustomer.email,
-                        city = fetchedCustomer.city,
-                        postalCode = fetchedCustomer.postalCode,
-                        address = fetchedCustomer.address,
-                        phoneNumber = fetchedCustomer.phoneNumber
+            combine(
+                customerRepository.readCustomerFlow(),
+                supplementRepository.readSupplementTracksFlow()
+            ) { customerResult, tracksResult ->
+                if (customerResult.isSuccess()) {
+                    val customer = customerResult.getSuccessData()
+                    val tracks = if (tracksResult.isSuccess()) tracksResult.getSuccessData() else emptyList()
+
+                    screenState = screenState.copy(
+                        id = customer.id,
+                        firstName = customer.firstName,
+                        lastName = customer.lastName,
+                        email = customer.email,
+                        supplements = tracks
                     )
-                    screenReady = RequestState.Success(Unit)
-                } else if (data.isError()) {
-                    screenReady = RequestState.Error(data.getErrorMessage())
+                    if (screenReady is RequestState.Loading) {
+                        screenReady = RequestState.Success(Unit)
+                    }
+                } else if (customerResult.isError() && screenReady is RequestState.Loading) {
+                    screenReady = RequestState.Error(customerResult.getErrorMessage())
                 }
-            }
+            }.collect()
         }
     }
 
-    fun updateLastName(value: String) {
-        screenState = screenState.copy(lastName = value)
-    }
+    fun takeServing(track: SupplementTrack, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            val currentTime = Clock.System.now().toEpochMilliseconds().toString()
 
-    fun updateFirstName(value: String) {
-        screenState = screenState.copy(firstName = value)
-    }
+            val updatedList = screenState.supplements.map {
+                if (it.id == track.id) it.copy(
+                    remainingServings = it.remainingServings - 1,
+                    lastTakenDate = currentTime
+                ) else it
+            }
+            screenState = screenState.copy(supplements = updatedList)
 
-    fun updateCity(value: String) {
-        screenState = screenState.copy(city = value)
-    }
-
-    fun updatePostalCode(value: Int?) {
-        screenState = screenState.copy(postalCode = value)
-    }
-
-    fun updateAddress(value: String) {
-        screenState = screenState.copy(address = value)
-    }
-
-    fun updatePhoneNumber(value: String) {
-        screenState = screenState.copy(
-            phoneNumber = PhoneNumber(
-                dialCode = 7,
-                number = value
+            supplementRepository.takeServing(
+                track = track,
+                onSuccess = { },
+                onError = {
+                    onError(it)
+                }
             )
-        )
+        }
     }
 
-    fun updateCustomer(
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
+
+    fun updateSupplementTrack(
+        track: SupplementTrack,
+        newRemaining: Int,
+        newTotal: Int,
+        onError: (String) -> Unit
     ) {
         viewModelScope.launch {
-            customerRepository.updateCustomer(
-                customer = Customer(
-                    id = screenState.id,
-                    lastName = screenState.lastName,
-                    firstName = screenState.firstName,
-                    email = screenState.email,
-                    city = screenState.city,
-                    postalCode = screenState.postalCode,
-                    address = screenState.address,
-                    phoneNumber = screenState.phoneNumber
-                ),
-                onSuccess = onSuccess,
+            val updatedTrack = track.copy(
+                remainingServings = newRemaining,
+                totalServings = newTotal
+            )
+            supplementRepository.updateSupplementTrack(
+                track = updatedTrack,
+                onSuccess = {
+                    val updatedList = screenState.supplements.map { item ->
+                        if (item.id == track.id) updatedTrack else item
+                    }
+                    screenState = screenState.copy(supplements = updatedList)
+                },
                 onError = onError
             )
         }
     }
 
+    fun deleteSupplementTrack(id: String, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            supplementRepository.deleteSupplementTrack(
+                trackId = id,
+                onSuccess = { },
+                onError = onError
+            )
+        }
+    }
 }

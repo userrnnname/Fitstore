@@ -2,7 +2,7 @@ package com.fitstore.products_overview
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fitstore.data.com.fitstore.data.domain.ProductRepository
+import com.fitstore.data.domain.ProductRepository
 import com.fitstore.shared.util.RequestState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine

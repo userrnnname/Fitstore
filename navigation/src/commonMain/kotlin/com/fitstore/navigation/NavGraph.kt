@@ -7,11 +7,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.fitstore.admin_panel.AdminPanelScreen
 import com.fitstore.auth.AuthScreen
+import com.fitstore.category_search.CategorySearchScreen
+import com.fitstore.details.DetailsScreen
+import com.fitstore.edit_profile.EditProfileScreen
 import com.fitstore.home.HomeGraphScreen
 import com.fitstore.login.LoginScreen
 import com.fitstore.manage_product.ManageProductScreen
 import com.fitstore.profile.ProfileScreen
 import com.fitstore.register.RegisterScreen
+import com.fitstore.shared.domain.ProductCategory
 import com.fitstore.shared.navigation.Screen
 
 @Composable
@@ -66,11 +70,27 @@ fun SetupNavGraph(startDestination: Screen = Screen.Auth) {
                 },
                 navigateToAdminPanel = {
                     navController.navigate(Screen.AdminPanel)
+                },
+                navigateToDetails = { productId ->
+                    navController.navigate(Screen.Details(id = productId))
+                },
+                navigateToCategorySearch = { categoryName ->
+                    navController.navigate(Screen.CategorySearch(categoryName))
                 }
             )
         }
         composable<Screen.Profile> {
             ProfileScreen(
+                navigateBack = {
+                    navController.navigateUp()
+                },
+                navigateToEditProfile = {
+                    navController.navigate(Screen.EditProfile)
+                }
+            )
+        }
+        composable<Screen.EditProfile> {
+            EditProfileScreen(
                 navigateBack = {
                     navController.navigateUp()
                 }
@@ -90,6 +110,25 @@ fun SetupNavGraph(startDestination: Screen = Screen.Auth) {
             val id = it.toRoute<Screen.ManageProduct>().id
             ManageProductScreen(
                 id = id,
+                navigateBack = {
+                    navController.navigateUp()
+                }
+            )
+        }
+        composable<Screen.Details> {
+            DetailsScreen(
+                navigateBack = {
+                    navController.navigateUp()
+                }
+            )
+        }
+        composable<Screen.CategorySearch> {
+            val category = ProductCategory.valueOf(it.toRoute<Screen.CategorySearch>().category)
+            CategorySearchScreen(
+                category = category,
+                navigateToDetails = { id ->
+                    navController.navigate(Screen.Details(id))
+                },
                 navigateBack = {
                     navController.navigateUp()
                 }

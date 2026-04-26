@@ -7,12 +7,12 @@ import fitstore.shared.generated.resources.book
 import fitstore.shared.generated.resources.cat
 import fitstore.shared.generated.resources.check
 import fitstore.shared.generated.resources.checkmark_image
+import fitstore.shared.generated.resources.clock
 import fitstore.shared.generated.resources.close
 import fitstore.shared.generated.resources.delete
 import fitstore.shared.generated.resources.edit
 import fitstore.shared.generated.resources.eye
 import fitstore.shared.generated.resources.eye_off
-import fitstore.shared.generated.resources.google_logo
 import fitstore.shared.generated.resources.grid
 import fitstore.shared.generated.resources.home
 import fitstore.shared.generated.resources.log_in
@@ -59,6 +59,7 @@ object Resources {
         val EyeOpen = Res.drawable.eye
         val EyeClosed = Res.drawable.eye_off
         val Register = Res.drawable.register
+        val Clock = Res.drawable.clock
     }
     object Image {
         val ShoppingCart = Res.drawable.shopping_cart_image
