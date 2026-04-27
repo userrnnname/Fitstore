@@ -4,15 +4,18 @@ import com.fitstore.admin_panel.AdminPanelViewModel
 import com.fitstore.auth.AuthViewModel
 import com.fitstore.cart.CartViewModel
 import com.fitstore.category_search.CategorySearchViewModel
+import com.fitstore.checkout.CheckoutViewModel
 import com.fitstore.data.AdminRepositoryImpl
 import com.fitstore.data.CustomerRepositoryImpl
 import com.fitstore.data.ImageRepositoryImpl
+import com.fitstore.data.OrderRepositoryImpl
 import com.fitstore.data.ProductRepositoryImpl
 import com.fitstore.data.SupplementRepositoryImpl
-import com.fitstore.data.domain.ProductRepository
+import com.fitstore.data.domain.OrderRepository
 import com.fitstore.data.domain.AdminRepository
 import com.fitstore.data.domain.CustomerRepository
 import com.fitstore.data.domain.ImageRepository
+import com.fitstore.data.domain.ProductRepository
 import com.fitstore.data.domain.SupplementRepository
 import com.fitstore.details.DetailsViewModel
 import com.fitstore.edit_profile.EditProfileViewModel
@@ -48,6 +51,12 @@ val sharedModule = module {
             supabase = get()
         )
     }
+    single<OrderRepository> {
+        OrderRepositoryImpl(
+            supabase = get(),
+            customerRepository = get()
+        )
+    }
     single<CustomerRepository> { CustomerRepositoryImpl(get()) }
     viewModelOf(::AuthViewModel)
     viewModelOf(::HomeGraphViewModel)
@@ -61,6 +70,8 @@ val sharedModule = module {
     viewModelOf(::DetailsViewModel)
     viewModelOf(::CartViewModel)
     viewModelOf(::CategorySearchViewModel)
+    viewModelOf(::CheckoutViewModel)
+    //viewModelOf(::PaymentCompletedViewModel)
 }
 expect val targetModule: Module
 fun initializeKoin(

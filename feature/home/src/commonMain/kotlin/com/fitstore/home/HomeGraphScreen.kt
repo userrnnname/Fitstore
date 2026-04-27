@@ -2,6 +2,7 @@ package com.fitstore.home
 
 import ContentWithMessageBar
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -40,6 +41,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.fitstore.cart.CartScreen
+import com.fitstore.cart.CartViewModel
 import com.fitstore.categories.CategoriesScreen
 import com.fitstore.home.component.BottomBar
 import com.fitstore.home.component.CustomDrawer
@@ -60,6 +62,7 @@ import com.fitstore.shared.SurfaceLighter
 import com.fitstore.shared.TextPrimary
 import com.fitstore.shared.TextWhite
 import com.fitstore.shared.navigation.Screen
+import com.fitstore.shared.util.RequestState
 import com.fitstore.shared.util.getScreenWidth
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -72,7 +75,8 @@ fun HomeGraphScreen(
     navigateToProfile: () -> Unit,
     navigateToAdminPanel: () -> Unit,
     navigateToDetails: (String) -> Unit,
-    navigateToCategorySearch: (String) -> Unit
+    navigateToCategorySearch: (String) -> Unit,
+    navigateToCheckout: (String) -> Unit
 ) {
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState()
@@ -110,6 +114,8 @@ fun HomeGraphScreen(
 
     val viewModel = koinViewModel<HomeGraphViewModel>()
     val customer by viewModel.customer.collectAsState()
+    val cartViewModel = koinViewModel<CartViewModel>()
+    val totalAmount by cartViewModel.totalAmountFlow.collectAsState(RequestState.Loading)
     val messageBarState = rememberMessageBarState()
 
     Box(
@@ -157,6 +163,29 @@ fun HomeGraphScreen(
                                     fontSize = FontSize.LARGE,
                                     color = TextPrimary
                                 )
+                            }
+                        },
+                        actions = {
+                            AnimatedVisibility(
+                                visible = selectedDestination == BottomBarDestination.Cart
+                            ) {
+                                if (customer.isSuccess() && customer.getSuccessData().cart.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        if (totalAmount.isSuccess()) {
+                                            navigateToCheckout(
+                                                totalAmount.getSuccessData().toString()
+                                            )
+                                        } else if (totalAmount.isError()) {
+                                            messageBarState.addError("Ошибка при расчете общей суммы: ${totalAmount.getErrorMessage()}")
+                                        }
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(Resources.Icon.RightArrow),
+                                            contentDescription = "Вправо",
+                                            tint = IconPrimary
+                                        )
+                                    }
+                                }
                             }
                         },
                         navigationIcon = {

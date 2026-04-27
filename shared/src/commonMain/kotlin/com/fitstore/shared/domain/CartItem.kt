@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 @Serializable
 @OptIn(ExperimentalUuidApi::class)
 data class CartItem(
-    val id: String = Uuid.Companion.random().toHexString(),
+    val id: String? = null,
     val productId: String,
     val flavor: String? = null,
     val quantity: Int

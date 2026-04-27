@@ -8,11 +8,13 @@ import androidx.navigation.toRoute
 import com.fitstore.admin_panel.AdminPanelScreen
 import com.fitstore.auth.AuthScreen
 import com.fitstore.category_search.CategorySearchScreen
+import com.fitstore.checkout.CheckoutScreen
 import com.fitstore.details.DetailsScreen
 import com.fitstore.edit_profile.EditProfileScreen
 import com.fitstore.home.HomeGraphScreen
 import com.fitstore.login.LoginScreen
 import com.fitstore.manage_product.ManageProductScreen
+import com.fitstore.payment_completed.PaymentCompletedScreen
 import com.fitstore.profile.ProfileScreen
 import com.fitstore.register.RegisterScreen
 import com.fitstore.shared.domain.ProductCategory
@@ -76,6 +78,9 @@ fun SetupNavGraph(startDestination: Screen = Screen.Auth) {
                 },
                 navigateToCategorySearch = { categoryName ->
                     navController.navigate(Screen.CategorySearch(categoryName))
+                },
+                navigateToCheckout =  { totalAmount ->
+                    navController.navigate(Screen.Checkout)
                 }
             )
         }
@@ -131,6 +136,24 @@ fun SetupNavGraph(startDestination: Screen = Screen.Auth) {
                 },
                 navigateBack = {
                     navController.navigateUp()
+                }
+            )
+        }
+        composable<Screen.Checkout> {
+            CheckoutScreen(
+                navigateBack = { navController.navigateUp() },
+                navigateToPaymentCompleted = { isSuccess, error ->
+                    navController.navigate(Screen.PaymentCompleted(isSuccess, error))
+                }
+            )
+        }
+        composable<Screen.PaymentCompleted> {
+            PaymentCompletedScreen(
+                navigateBack = {
+                    navController.navigate(Screen.HomeGraph) {
+                        launchSingleTop = true
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

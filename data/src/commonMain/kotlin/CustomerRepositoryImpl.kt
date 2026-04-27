@@ -3,17 +3,16 @@ package com.fitstore.data
 import com.fitstore.data.domain.CustomerRepository
 import com.fitstore.shared.domain.CartItem
 import com.fitstore.shared.domain.Customer
+import com.fitstore.shared.domain.UpdateCartParams
 import com.fitstore.shared.util.RequestState
 import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.annotations.SupabaseExperimental
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.query.filter.FilterOperation
-import io.github.jan.supabase.postgrest.query.filter.FilterOperator
-import io.github.jan.supabase.realtime.selectAsFlow
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -99,25 +98,20 @@ class CustomerRepositoryImpl(
         }
     }
 
-    @OptIn(SupabaseExperimental::class)
     override fun readCustomerFlow(): Flow<RequestState<Customer>> = flow {
         emit(RequestState.Loading)
         val userId = getCurrentUserId() ?: return@flow emit(RequestState.Error("Пользователь не авторизован."))
+
         try {
-            supabase.from("customers")
-                .selectAsFlow(
-                    primaryKey = Customer::id,
-                    filter = FilterOperation("id", FilterOperator.EQ, userId)
-                )
-                .collect { customers ->
-                    val customer = customers.find { it.id == userId }
-                    if (customer != null) {
-                        emit(RequestState.Success(customer))
-                    }
-                }
+            val customer = supabase.from("customers")
+                .select {
+                    filter { eq("id", userId) }
+                }.decodeSingle<Customer>()
+
+            emit(RequestState.Success(customer))
         } catch (e: Exception) {
-                emit(RequestState.Error("Ошибка потока: ${e.message}"))
-            }
+            emit(RequestState.Error("Ошибка загрузки: ${e.message}"))
+        }
     }
 
 
@@ -167,24 +161,17 @@ class CustomerRepositoryImpl(
         try {
             val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
 
-            val customer = supabase.from("customers")
-                .select { filter { eq("id", userId) }
-                }.decodeSingle<Customer>()
-
-            val updatedCart = customer.cart.map {
-                if (it.id == id) it.copy(quantity = quantity) else it
-            }
-
-            supabase.from("customers").update(
-                {
-                    set("cart", updatedCart)
-                }
-            ) {
-                filter { eq("id", userId) }
-            }
+            supabase.postgrest.rpc(
+                function = "update_cart_item_quantity",
+                parameters = UpdateCartParams(
+                    p_customer_id = userId,
+                    p_item_id = id,
+                    p_new_quantity = quantity
+                )
+            )
             onSuccess()
         } catch (e: Exception) {
-            onError("Ошибка обновления количества: ${e.message}")
+            onError("Ошибка сервера: ${e.message}")
         }
     }
 

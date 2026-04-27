@@ -9,6 +9,7 @@ import fitstore.shared.generated.resources.check
 import fitstore.shared.generated.resources.checkmark_image
 import fitstore.shared.generated.resources.clock
 import fitstore.shared.generated.resources.close
+import fitstore.shared.generated.resources.credit_card
 import fitstore.shared.generated.resources.delete
 import fitstore.shared.generated.resources.edit
 import fitstore.shared.generated.resources.eye
@@ -60,6 +61,7 @@ object Resources {
         val EyeClosed = Res.drawable.eye_off
         val Register = Res.drawable.register
         val Clock = Res.drawable.clock
+        val CreditCard = Res.drawable.credit_card
     }
     object Image {
         val ShoppingCart = Res.drawable.shopping_cart_image

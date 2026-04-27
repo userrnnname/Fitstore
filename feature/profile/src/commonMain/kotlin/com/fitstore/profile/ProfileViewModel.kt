@@ -61,7 +61,10 @@ class ProfileViewModel(
     }
 
     fun takeServing(track: SupplementTrack, onError: (String) -> Unit) {
+        if (track.remainingServings <= 0) return
+
         viewModelScope.launch {
+            val oldSupplements = screenState.supplements
             val currentTime = Clock.System.now().toEpochMilliseconds().toString()
 
             val updatedList = screenState.supplements.map {
@@ -76,6 +79,7 @@ class ProfileViewModel(
                 track = track,
                 onSuccess = { },
                 onError = {
+                    screenState = screenState.copy(supplements = oldSupplements)
                     onError(it)
                 }
             )

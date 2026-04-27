@@ -5,7 +5,6 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
-import io.github.jan.supabase.realtime.Realtime
 import org.koin.dsl.module
 
 expect fun createSupabaseClient(): SupabaseClient
@@ -20,7 +19,6 @@ internal fun configureSupabaseClient(): SupabaseClient {
         supabaseKey = SupabaseConfig.anonKey
     ) {
         install(Postgrest)
-        install(Realtime)
         install(Storage)
         install(Auth)
     }

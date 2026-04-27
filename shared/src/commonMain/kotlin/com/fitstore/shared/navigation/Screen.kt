@@ -36,4 +36,11 @@ sealed class Screen {
     data class Details(
         val id: String
     ) : Screen()
+    @Serializable
+    data object Checkout : Screen()
+    @Serializable
+    data class PaymentCompleted(
+        val isSuccess: Boolean? = null,
+        val error: String? = null,
+    ) : Screen()
 }
