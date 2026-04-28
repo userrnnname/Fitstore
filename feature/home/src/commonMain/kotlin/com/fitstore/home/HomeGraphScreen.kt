@@ -118,6 +118,15 @@ fun HomeGraphScreen(
     val totalAmount by cartViewModel.totalAmountFlow.collectAsState(RequestState.Loading)
     val messageBarState = rememberMessageBarState()
 
+    val shouldShowCheckoutButton by remember {
+        derivedStateOf {
+            selectedDestination == BottomBarDestination.Cart &&
+                    cartViewModel.cartItemsWithProducts.value is RequestState.Success &&
+                    (cartViewModel.cartItemsWithProducts.value as? RequestState.Success)?.data?.isNotEmpty() == true
+        }
+    }
+
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -167,24 +176,21 @@ fun HomeGraphScreen(
                         },
                         actions = {
                             AnimatedVisibility(
-                                visible = selectedDestination == BottomBarDestination.Cart
+                                visible = shouldShowCheckoutButton
                             ) {
-                                if (customer.isSuccess() && customer.getSuccessData().cart.isNotEmpty()) {
-                                    IconButton(onClick = {
-                                        if (totalAmount.isSuccess()) {
-                                            navigateToCheckout(
-                                                totalAmount.getSuccessData().toString()
-                                            )
-                                        } else if (totalAmount.isError()) {
-                                            messageBarState.addError("Ошибка при расчете общей суммы: ${totalAmount.getErrorMessage()}")
-                                        }
-                                    }) {
-                                        Icon(
-                                            painter = painterResource(Resources.Icon.RightArrow),
-                                            contentDescription = "Вправо",
-                                            tint = IconPrimary
+                                IconButton(onClick = {
+                                    if (totalAmount.isSuccess()) {
+                                        navigateToCheckout(
+                                            totalAmount.getSuccessData().toString()
                                         )
+                                    } else if (totalAmount.isError()) {
+                                        messageBarState.addError("Ошибка при расчете общей суммы: ${totalAmount.getErrorMessage()}")
                                     }
+                                }) {
+                                    Icon(
+                                        painter = painterResource(Resources.Icon.RightArrow),
+                                        contentDescription = "Вправо",
+                                        tint = IconPrimary)
                                 }
                             }
                         },

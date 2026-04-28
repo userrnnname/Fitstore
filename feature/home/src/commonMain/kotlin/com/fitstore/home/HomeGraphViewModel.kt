@@ -45,24 +45,6 @@ class HomeGraphViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RequestState.Loading)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val cartItemsWithProducts = combine(customer, products) { customerState, productsState ->
-        when {
-            customerState.isSuccess() && productsState.isSuccess() -> {
-                val cart = customerState.getSuccessData().cart
-                val productList = productsState.getSuccessData()
-                val result = cart.mapNotNull { cartItem ->
-                    val product = productList.find { it.id == cartItem.productId }
-                    product?.let { cartItem to it }
-                }
-                RequestState.Success(result)
-            }
-            customerState.isError() -> RequestState.Error(customerState.getErrorMessage())
-            productsState.isError() -> RequestState.Error(productsState.getErrorMessage())
-            else -> RequestState.Loading
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RequestState.Loading)
-
     fun signOut(
         onSuccess: () -> Unit,
         onError: (String) -> Unit,
