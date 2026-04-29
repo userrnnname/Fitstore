@@ -1,131 +1,68 @@
 package com.fitstore.payment_completed
 
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import com.fitstore.data.domain.ProductRepository
-import com.fitstore.shared.util.RequestState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.fitstore.data.domain.CustomerRepository
 import com.fitstore.data.domain.OrderRepository
-import com.fitstore.shared.domain.CartItem
 import com.fitstore.shared.domain.Order
-import com.fitstore.shared.domain.Product
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import com.fitstore.shared.util.RequestState
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.fitstore.shared.navigation.Screen
+import androidx.navigation.toRoute
 
-class PaymentViewModel(
+class PaymentCompletedViewModel(
     private val savedStateHandle: SavedStateHandle,
     private val customerRepository: CustomerRepository,
-    private val orderRepository: OrderRepository,
-    private val productRepository: ProductRepository,
+    private val orderRepository: OrderRepository
 ) : ViewModel() {
-    /*var screenState: RequestState<Unit> by mutableStateOf(RequestState.Loading)
-
-    private val customer = customerRepository.readCustomerFlow()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = RequestState.Loading
-        )
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val totalAmount = customer.flatMapLatest { customerState ->
-        when {
-            customerState.isSuccess() -> {
-                val cartItems = customerState.getSuccessData().cart
-                val productIds = cartItems.map { it.productId }
-
-                if (productIds.isEmpty()) {
-                    flowOf(RequestState.Success(0.0))
-                } else {
-                    productRepository.readProductsByIdsFlow(productIds)
-                        .map { products ->
-                            if (products.isSuccess()) {
-                                RequestState.Success(
-                                    calculateTotalPrice(
-                                        cartItems = cartItems,
-                                        products = products.getSuccessData()
-                                    )
-                                )
-                            } else {
-                                RequestState.Error(products.getErrorMessage())
-                            }
-                        }
-                }
-            }
-            customerState.isError() -> flowOf(RequestState.Error(customerState.getErrorMessage()))
-            else -> flowOf(RequestState.Loading)
-        }
-    }
+    var screenState: RequestState<Unit> by mutableStateOf(RequestState.Loading)
+        private set
 
     init {
-        viewModelScope.launch {
-            totalAmount.collectLatest { amount ->
-                if (amount.isSuccess()) {
-                    val isSuccess = savedStateHandle.get<Boolean>("isSuccess")
-                    val error = savedStateHandle.get<String>("error")
-                    val token = savedStateHandle.get<String>("token")
+        val args = savedStateHandle.toRoute<Screen.PaymentCompleted>()
 
-                    if (isSuccess != null) {
-                        screenState = RequestState.Success(Unit)
-                        if (token != null) {
-                            createTheOrder(
-                                totalAmount = amount.getSuccessData(),
-                                onError = { message ->
-                                    screenState = RequestState.Error(message)
-                                }
-                            )
-                        }
-                    } else if (error != null) {
-                        screenState = RequestState.Error(error)
-                    } else {
-                        screenState =
-                            RequestState.Error("Unknown error. Contact us at: example@gmail.com")
-                    }
-                } else if (amount.isError()) {
-                    screenState = RequestState.Error(amount.getErrorMessage())
-                }
-            }
+        if (args.isSuccess == true) {
+            val amount = args.totalAmount ?: 0.0
+            finalizeOrder(amount)
+        } else {
+            screenState = RequestState.Error(args.error ?: "Ошибка оплаты")
         }
     }
 
-    private fun createTheOrder(
-        totalAmount: Double,
-        token: String,
-        onError: (String) -> Unit,
-    ) {
-        if (customer.value.isSuccess()) {
-            val customerId = customer.value.getSuccessData().id
-            viewModelScope.launch(Dispatchers.IO) {
+    private fun finalizeOrder(amount: Double) {
+        viewModelScope.launch {
+            val customerResult = customerRepository.readCustomerFlow().first()
+            if (customerResult.isSuccess()) {
+                val customer = customerResult.getSuccessData()
+
                 orderRepository.createTheOrder(
                     order = Order(
-                        customerId = customerId,
-                        items = customer.value.getSuccessData().cart,
-                        totalAmount = totalAmount,
-                        token = token
+                        customerId = customer.id,
+                        items = customer.cart,
+                        totalAmount = amount
                     ),
-                    onSuccess = { },
-                    onError = { message -> onError(message) }
+                    onSuccess = {
+                        viewModelScope.launch {
+                            deleteAllCartItems()
+                        }
+                    },
+                    onError = { screenState = RequestState.Error(it) }
                 )
+            } else {
+                screenState = RequestState.Error("Не удалось получить данные профиля")
             }
-        } else if (customer.value.isError()) onError(customer.value.getErrorMessage())
-    }
-
-    fun calculateTotalPrice(cartItems: List<CartItem>, products: List<Product>): Double {
-        return cartItems.sumOf { cartItem ->
-            val product = products.find { it.id == cartItem.productId }
-            product?.price?.times(cartItem.quantity) ?: 0.0
         }
     }
-*/}
+
+    private suspend fun deleteAllCartItems() {
+        customerRepository.deleteAllCartItems(
+            onSuccess = { screenState = RequestState.Success(Unit) },
+            onError = { screenState = RequestState.Error("Заказ создан, но корзина не очищена: $it") }
+        )
+    }
+}

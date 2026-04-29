@@ -51,6 +51,7 @@ kotlin {
 
             implementation(project(path = ":navigation"))
             implementation(project(path = ":shared"))
+            implementation(project(path = ":feature:home:cart:checkout"))
             implementation(project(path = ":di"))
             implementation(project(path = ":data"))
         }
@@ -70,6 +71,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        manifestPlaceholders["YANDEX_CLIENT_ID"] = "386ada48f3324b70805d305f8a322be6"
     }
     packaging {
         resources {

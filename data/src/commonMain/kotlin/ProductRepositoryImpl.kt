@@ -9,6 +9,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withTimeout
 
 class ProductRepositoryImpl(
     private val supabase: SupabaseClient
@@ -68,18 +69,26 @@ class ProductRepositoryImpl(
 
     override fun readProductsByIdsFlow(ids: List<String>): Flow<RequestState<List<Product>>> = flow {
         emit(RequestState.Loading)
+        if (ids.isEmpty()) {
+            emit(RequestState.Success(emptyList()))
+            return@flow
+        }
         try {
-            val response = supabase.postgrest["products"]
-                .select {
-                    filter {
-                        isIn("id", ids)
+            val response = withTimeout(5000) {
+                supabase.postgrest["products"]
+                    .select {
+                        filter {
+                            isIn("id", ids)
+                        }
                     }
-                }
-                .decodeList<Product>()
+                    .decodeList<Product>()
+            }
 
-            emit(RequestState.Success(response.map { it.copy(title = it.title.uppercase()) }))
+            val formattedProducts = response.map { it.copy(title = it.title.uppercase()) }
+            emit(RequestState.Success(formattedProducts))
+
         } catch (e: Exception) {
-            emit(RequestState.Error("Ошибка чтения списка товаров: ${e.message}"))
+            emit(RequestState.Error("Ошибка товаров: ${e.message}"))
         }
     }
 

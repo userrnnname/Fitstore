@@ -15,6 +15,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withTimeout
 
 class CustomerRepositoryImpl(
     private val supabase: SupabaseClient
@@ -101,17 +102,17 @@ class CustomerRepositoryImpl(
 
     override fun readCustomerFlow(): Flow<RequestState<Customer>> = flow {
         emit(RequestState.Loading)
-        val userId = getCurrentUserId() ?: return@flow emit(RequestState.Error("Пользователь не авторизован."))
+        val userId = getCurrentUserId() ?: return@flow
 
         try {
-            val customer = supabase.from("customers")
-                .select {
-                    filter { eq("id", userId) }
-                }.decodeSingle<Customer>()
-
+            val customer = withTimeout(5000) {
+                supabase.from("customers")
+                    .select { filter { eq("id", userId) } }
+                    .decodeSingle<Customer>()
+            }
             emit(RequestState.Success(customer))
         } catch (e: Exception) {
-            emit(RequestState.Error("Ошибка загрузки: ${e.message}"))
+            emit(RequestState.Error("Не удалось обновить корзину"))
         }
     }
 

@@ -20,12 +20,15 @@ kotlin {
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
-            baseName = "payment_completed"
+            baseName = "payment"
             isStatic = true
         }
     }
 
     sourceSets {
+        androidMain.dependencies {
+            implementation(libs.yandex.pay)
+        }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -35,7 +38,6 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation(libs.compose.navigation)
 
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
@@ -52,7 +54,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.fitstore.payment_completed"
+    namespace = "com.fitstore.payment"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {

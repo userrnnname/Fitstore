@@ -22,8 +22,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun PaymentCompletedScreen(
     navigateBack: () -> Unit,
 ) {
-    //val viewModel = koinViewModel<PaymentViewModel>()
-    //val screenState = viewModel.screenState
+    val viewModel = koinViewModel<PaymentCompletedViewModel>()
+    val screenState = viewModel.screenState
 
     Column(
         modifier = Modifier
@@ -32,9 +32,9 @@ fun PaymentCompletedScreen(
             .systemBarsPadding()
             .padding(all = 24.dp)
     ) {
-        /*screenState.DisplayResult(
+        screenState.DisplayResult(
             onLoading = { LoadingCard(modifier = Modifier.fillMaxSize()) },
-            onSuccess = {*/
+            onSuccess = {
                 Column {
                     Box(
                         modifier = Modifier.weight(1f),
@@ -52,7 +52,7 @@ fun PaymentCompletedScreen(
                         onClick = navigateBack
                     )
                 }
-            }/*,
+            },
             onError = { message ->
                 Column {
                     Box(
@@ -73,5 +73,5 @@ fun PaymentCompletedScreen(
                 }
             }
         )
-    }*/
+    }
 }

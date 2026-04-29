@@ -17,14 +17,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.fitstore.shared.K2DFont
 import com.fitstore.shared.FontSize
 import com.fitstore.shared.IconPrimary
+import com.fitstore.shared.K2DFont
 import com.fitstore.shared.Resources
 import com.fitstore.shared.Surface
 import com.fitstore.shared.SurfaceBrand
@@ -33,23 +34,27 @@ import com.fitstore.shared.TextPrimary
 import com.fitstore.shared.TextWhite
 import com.fitstore.shared.component.PrimaryButton
 import com.fitstore.shared.component.ProfileForm
-import com.fitstore.shared.util.RequestState
 import com.fitstore.shared.util.formatPrice
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 import rememberMessageBarState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutScreen(
     navigateBack: () -> Unit,
-    navigateToPaymentCompleted: (Boolean?, String?) -> Unit,
+    navigateToPaymentCompleted: (Boolean?, String?, Double?) -> Unit,
+    paymentLauncher: PaymentLauncher?
 ) {
     val messageBarState = rememberMessageBarState()
-    val viewModel = koinViewModel<CheckoutViewModel>()
+    val viewModel = koinViewModel<CheckoutViewModel>{ parametersOf(paymentLauncher) }
     val screenState = viewModel.screenState
     val isFormValid = viewModel.isFormValid
     val totalAmount by viewModel.totalAmount.collectAsState()
+    LaunchedEffect(paymentLauncher) {
+        paymentLauncher?.initialize()
+    }
 
     Scaffold(
         containerColor = Surface,
@@ -134,21 +139,21 @@ fun CheckoutScreen(
                     onPhoneNumberChange = viewModel::updatePhoneNumber
                 )
                 Column {
-                    /*PrimaryButton(
-                        text = "Оплатить сейчас",
+                    PrimaryButton(
+                        text = if (viewModel.isPaymentLoading) "Загрузка..." else "Оплатить онлайн",
                         icon = Resources.Icon.CreditCard,
-                        enabled = isFormValid,
+                        enabled = viewModel.isFormValid && !viewModel.isPaymentLoading,
                         onClick = {
-                            viewModel.payWithPayPal(
-                                onSuccess = {
-
+                            viewModel.startOnlinePayment(
+                                onSuccess = { amount ->
+                                    navigateToPaymentCompleted(true, null, amount)
                                 },
-                                onError = { message ->
-                                    messageBarState.addError(message)
+                                onError = { error ->
+                                    navigateToPaymentCompleted(false, error, null)
                                 }
                             )
                         }
-                    )*/
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     PrimaryButton(
                         text = "Оплата при доставке",
@@ -158,10 +163,10 @@ fun CheckoutScreen(
                         onClick = {
                             viewModel.payOnDelivery(
                                 onSuccess = {
-                                    navigateToPaymentCompleted(true, null)
+                                    navigateToPaymentCompleted(true, null, totalAmount)
                                 },
-                                onError = { message ->
-                                    navigateToPaymentCompleted(null, message)
+                                onError = { error ->
+                                    navigateToPaymentCompleted(null, error, null)
                                 }
                             )
                         }

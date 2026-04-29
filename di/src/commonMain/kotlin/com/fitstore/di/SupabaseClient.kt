@@ -21,6 +21,7 @@ internal fun configureSupabaseClient(): SupabaseClient {
         install(Postgrest)
         install(Storage)
         install(Auth)
+        install(Realtime)
     }
 }
 

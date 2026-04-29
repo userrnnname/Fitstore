@@ -115,16 +115,21 @@ fun HomeGraphScreen(
     val viewModel = koinViewModel<HomeGraphViewModel>()
     val customer by viewModel.customer.collectAsState()
     val cartViewModel = koinViewModel<CartViewModel>()
+    val cartState by cartViewModel.cartItemsWithProducts.collectAsState()
     val totalAmount by cartViewModel.totalAmountFlow.collectAsState(RequestState.Loading)
     val messageBarState = rememberMessageBarState()
 
     val shouldShowCheckoutButton by remember {
         derivedStateOf {
             selectedDestination == BottomBarDestination.Cart &&
-                    cartViewModel.cartItemsWithProducts.value is RequestState.Success &&
-                    (cartViewModel.cartItemsWithProducts.value as? RequestState.Success)?.data?.isNotEmpty() == true
+                    cartState is RequestState.Success &&
+                    (cartState as RequestState.Success).data.isNotEmpty()
         }
     }
+    val canNavigateToCheckout by remember {
+        derivedStateOf { totalAmount is RequestState.Success }
+    }
+
 
 
     Box(
@@ -178,19 +183,19 @@ fun HomeGraphScreen(
                             AnimatedVisibility(
                                 visible = shouldShowCheckoutButton
                             ) {
-                                IconButton(onClick = {
+                                IconButton(
+                                    enabled = canNavigateToCheckout,
+                                    onClick = {
                                     if (totalAmount.isSuccess()) {
-                                        navigateToCheckout(
-                                            totalAmount.getSuccessData().toString()
-                                        )
+                                        navigateToCheckout(totalAmount.getSuccessData().toString())
                                     } else if (totalAmount.isError()) {
                                         messageBarState.addError("Ошибка при расчете общей суммы: ${totalAmount.getErrorMessage()}")
                                     }
                                 }) {
                                     Icon(
                                         painter = painterResource(Resources.Icon.RightArrow),
-                                        contentDescription = "Вправо",
-                                        tint = IconPrimary)
+                                        contentDescription = "Оформить",
+                                        tint = if (canNavigateToCheckout) IconPrimary else IconPrimary.copy(alpha = Alpha.DISABLED))
                                 }
                             }
                         },

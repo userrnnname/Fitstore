@@ -42,5 +42,6 @@ sealed class Screen {
     data class PaymentCompleted(
         val isSuccess: Boolean? = null,
         val error: String? = null,
+        val totalAmount: Double? = null
     ) : Screen()
 }

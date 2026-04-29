@@ -14,6 +14,7 @@ import com.fitstore.edit_profile.EditProfileScreen
 import com.fitstore.home.HomeGraphScreen
 import com.fitstore.login.LoginScreen
 import com.fitstore.manage_product.ManageProductScreen
+import com.fitstore.checkout.PaymentLauncher
 import com.fitstore.payment_completed.PaymentCompletedScreen
 import com.fitstore.profile.ProfileScreen
 import com.fitstore.register.RegisterScreen
@@ -21,7 +22,11 @@ import com.fitstore.shared.domain.ProductCategory
 import com.fitstore.shared.navigation.Screen
 
 @Composable
-fun SetupNavGraph(startDestination: Screen = Screen.Auth) {
+fun SetupNavGraph (
+    startDestination: Screen = Screen.Auth,
+    paymentLauncher: PaymentLauncher? = null
+)
+{
     val navController = rememberNavController()
     NavHost(
         navController = navController,
@@ -142,9 +147,16 @@ fun SetupNavGraph(startDestination: Screen = Screen.Auth) {
         composable<Screen.Checkout> {
             CheckoutScreen(
                 navigateBack = { navController.navigateUp() },
-                navigateToPaymentCompleted = { isSuccess, error ->
-                    navController.navigate(Screen.PaymentCompleted(isSuccess, error))
-                }
+                navigateToPaymentCompleted = { isSuccess, error, amount ->
+                    navController.navigate(
+                        Screen.PaymentCompleted(
+                            isSuccess = isSuccess,
+                            error = error,
+                            totalAmount = amount
+                        )
+                    )
+                },
+                paymentLauncher = paymentLauncher
             )
         }
         composable<Screen.PaymentCompleted> {
