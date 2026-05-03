@@ -66,7 +66,7 @@ class AdminRepositoryImpl(
     ) {
         try {
             if (getCurrentUserId() != null) {
-                supabase.from("products").insert(product.copy(title = product.title.lowercase()))
+                supabase.from("products").insert(product)
                 onSuccess()
             } else onError("Пользователь недоступен.")
         } catch (e: Exception) {
@@ -79,7 +79,7 @@ class AdminRepositoryImpl(
             val product = supabase.postgrest.from("products")
                 .select { filter { eq("id", id) } }
                 .decodeSingle<Product>()
-            RequestState.Success(product.copy(title = product.title.uppercase()))
+            RequestState.Success(product)
         } catch (e: Exception) {
             RequestState.Error("Товар не найден: ${e.message}")
         }
@@ -113,8 +113,8 @@ class AdminRepositoryImpl(
         onError: (String) -> Unit
     ) {
         try {
-            supabase.from("products").update(product.copy(title = product.title.lowercase())) {
-                filter { eq("id", product.id) }
+            supabase.from("products").update(product) {
+                filter { eq("id", product.id ?: return@update) }
             }
             onSuccess()
         } catch (e: Exception) {
@@ -142,10 +142,10 @@ class AdminRepositoryImpl(
         try {
             val products = supabase.from("products")
                 .select {
-                    order("\"createdAt\"", Order.DESCENDING)
+                    order("created_at", Order.DESCENDING)
                     limit(10)
                 }.decodeList<Product>()
-            emit(RequestState.Success(products.map { it.copy(title = it.title.uppercase()) }))
+            emit(RequestState.Success(products))
         } catch (e: Exception) {
             emit(RequestState.Error(e.message ?: "Ошибка загрузки"))
         }
@@ -156,9 +156,9 @@ class AdminRepositoryImpl(
         try {
             val products = supabase.from("products")
                 .select {
-                    filter { ilike("title", "%${searchQuery.lowercase()}%") }
+                    filter { ilike("title", "%${searchQuery}%") }
                 }.decodeList<Product>()
-            emit(RequestState.Success(products.map { it.copy(title = it.title.uppercase()) }))
+            emit(RequestState.Success(products))
         } catch (e: Exception) {
             emit(RequestState.Error("Ошибка поиска: ${e.message}"))
         }

@@ -113,7 +113,7 @@ fun SupplementCard(
             AsyncImage(
                 modifier = Modifier
                     .width(120.dp)
-                    .fillMaxHeight()
+                    .height(130.dp)
                     .clip(RoundedCornerShape(size = 12.dp))
                     .border(
                         width = 1.dp,
@@ -165,7 +165,9 @@ fun SupplementCard(
                             containerColor = Surface
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Изменить кол-во", fontSize = FontSize.SMALL) },
+                                text = {
+                                    Text("Изменить кол-во",
+                                        fontSize = FontSize.REGULAR) },
                                 leadingIcon = {
                                     Icon(
                                         painterResource(Resources.Icon.Edit),
@@ -180,7 +182,7 @@ fun SupplementCard(
                                     Text(
                                         "Удалить",
                                         color = SurfaceError,
-                                        fontSize = FontSize.SMALL
+                                        fontSize = FontSize.REGULAR
                                     )
                                 },
                                 leadingIcon = {

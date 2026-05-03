@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
@@ -90,7 +91,7 @@ fun CartItemCard(
             ) {
                 Text(
                     modifier = Modifier.weight(1f),
-                    text = product.title,
+                    text = product.title.uppercase(),
                     fontFamily = RobotoCondensedFont(),
                     fontSize = FontSize.MEDIUM,
                     color = TextPrimary,

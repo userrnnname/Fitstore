@@ -165,7 +165,7 @@ fun DetailsScreen(navigateBack: () -> Unit) {
                                 AnimatedContent(
                                     targetState = selectedProduct.category
                                 ) { category ->
-                                    if (ProductCategory.valueOf(category) == ProductCategory.Accessories) {
+                                    if (ProductCategory.fromString(category) == ProductCategory.Accessories) {
                                         Spacer(modifier = Modifier.weight(1f))
                                     } else {
                                         Row(

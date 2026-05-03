@@ -80,7 +80,7 @@ fun ProductsOverviewScreen(
                             ) {
                                 itemsIndexed(
                                     items = products.filter { it.isNew }.sortedBy { it.createdAt }.take(6),
-                                    key = { _, item -> item.id }
+                                    key = { _, item -> item.id!! }
                                 ) { index, product ->
                                     val isLarge = index == centeredIndex
                                     val animatedScale by animateFloatAsState(
@@ -94,7 +94,7 @@ fun ProductsOverviewScreen(
                                             .fillParentMaxWidth(0.6f),
                                         product = product,
                                         isLarge = isLarge,
-                                        onClick = { navigateToDetails(product.id) }
+                                        onClick = { navigateToDetails(product.id!!) }
                                     )
                                 }
                             }
@@ -113,12 +113,12 @@ fun ProductsOverviewScreen(
                     }
                     items(
                         items = products.filter { it.isDiscounted }.sortedBy { it.createdAt }.take(3),
-                        key = { it.id }
+                        key = { it.id!! }
                     ) { product ->
                         ProductCard(
                             modifier = Modifier.padding(horizontal = 12.dp),
                             product = product,
-                            onClick = { navigateToDetails(product.id) }
+                            onClick = { navigateToDetails(product.id!!) }
                             )
                         }
                     }

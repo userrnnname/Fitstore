@@ -53,35 +53,35 @@ fun CartScreen() {
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(
-                            items = data
-                        ) { pair ->
+                        items(items = data
+                        ) { itemWithProduct ->
                             CartItemCard(
-                                cartItem = pair.first,
-                                product = pair.second,
+                                cartItem = itemWithProduct.cartItem,
+                                product = itemWithProduct.product,
                                 onMinusClick = { quantity ->
                                     viewModel.updateCartItemQuantity(
-                                        id = pair.first.id ?: "",
-                                        quantity = quantity,
+                                        cartItemId = itemWithProduct.cartItem.id!!,
+                                        newQuantity = quantity,
                                         onSuccess = {},
                                         onError = { messageBarState.addError(it) }
                                     )
                                 },
                                 onPlusClick = { quantity ->
                                     viewModel.updateCartItemQuantity(
-                                        id = pair.first.id ?: "",
-                                        quantity = quantity,
+                                        cartItemId = itemWithProduct.cartItem.id!!,
+                                        newQuantity = quantity,
                                         onSuccess = {},
                                         onError = { messageBarState.addError(it) }
                                     )
                                 },
-                                onDeleteClick = { viewModel.deleteCartItem(
-                                    id = pair.first.id ?: "",
-                                    onSuccess = {},
-                                    onError = { messageBarState.addError(it) }
-                                ) }
+                                onDeleteClick = {
+                                    viewModel.deleteCartItem(
+                                        cartItemId = itemWithProduct.cartItem.id!!,
+                                        onSuccess = {},
+                                        onError = { messageBarState.addError(it) }
+                                    )
+                                }
                             )
-
                         }
                     }
                 } else {

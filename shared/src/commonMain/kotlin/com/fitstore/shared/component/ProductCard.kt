@@ -60,12 +60,12 @@ fun ProductCard(
                 shape = RoundedCornerShape(size = 12.dp)
             )
             .background(SurfaceLighter)
-            .clickable { onClick(product.id) }
+            .clickable { onClick(product.id!!) }
     ) {
         AsyncImage(
             modifier = Modifier
                 .width(120.dp)
-                .height(124.dp)
+                .height(150.dp)
                 .clip(RoundedCornerShape(size = 12.dp))
                 .border(
                     width = 1.dp,
@@ -86,7 +86,7 @@ fun ProductCard(
         ) {
             Text(
                 modifier = Modifier.fillMaxWidth(),
-                text = product.title,
+                text = product.title.uppercase(),
                 fontSize = FontSize.MEDIUM,
                 color = TextPrimary,
                 fontFamily = RobotoCondensedFont(),
@@ -115,23 +115,27 @@ fun ProductCard(
                 AnimatedContent(
                     targetState = product.category
                 ) { category ->
-                    if (ProductCategory.valueOf(category) == ProductCategory.Accessories) {
+                    if (ProductCategory.fromString(category) == ProductCategory.Accessories) {
                         Spacer(modifier = Modifier.weight(1f))
                     } else {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(14.dp),
-                                painter = painterResource(Resources.Icon.Weight),
-                                contentDescription = "Вес"
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${product.weight} гр.",
-                                fontSize = FontSize.EXTRA_SMALL,
-                                color = TextPrimary
-                            )
+                        if (product.weight != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(14.dp),
+                                    painter = painterResource(Resources.Icon.Weight),
+                                    contentDescription = "Вес"
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${product.weight} гр.",
+                                    fontSize = FontSize.EXTRA_SMALL,
+                                    color = TextPrimary
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f)) // или просто пустое место
                         }
                     }
                 }

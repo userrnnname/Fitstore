@@ -1,30 +1,43 @@
 package com.fitstore.data
 
 import com.fitstore.data.domain.CustomerRepository
-import com.fitstore.shared.domain.CartItem
 import com.fitstore.shared.domain.Customer
-import com.fitstore.shared.domain.UpdateCartParams
+import com.fitstore.shared.notifications.PlatformNotification
 import com.fitstore.shared.util.RequestState
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.postgrest
-import io.github.jan.supabase.postgrest.query.Columns
-import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.flow.map
 
 class CustomerRepositoryImpl(
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val notifications: PlatformNotification,
 ) : CustomerRepository {
 
-    override fun getCurrentUserId(): String? {
-        return supabase.auth.currentUserOrNull()?.id
+    override fun getCurrentUserId(): String? = supabase.auth.currentUserOrNull()?.id
+    override suspend fun getCurrentCustomer(): RequestState<Customer> {
+        val userId = getCurrentUserId() ?: return RequestState.Error("Пользователь не авторизован")
+        return try {
+            val customer = supabase.from("customers")
+                .select { filter { eq("id", userId) } }
+                .decodeSingle<Customer>()
+            RequestState.Success(customer)
+        } catch (e: Exception) {
+            RequestState.Error("Не удалось загрузить профиль: ${e.message}")
+        }
     }
 
+    override fun observeUserId(): Flow<String?> = supabase.auth.sessionStatus.map { status ->
+        when (status) {
+            is SessionStatus.Authenticated -> status.session.user?.id
+            else -> null
+        }
+    }
 
     override suspend fun createCustomer(
         user: UserInfo,
@@ -39,10 +52,12 @@ class CustomerRepositoryImpl(
                 email = user.email ?: "",
                 firstName = firstName ?: "",
                 lastName = lastName ?: "",
-                cart = emptyList(),
+                city = null,
+                postalCode = null,
+                address = null,
+                phoneNumber = null,
                 isAdmin = false
             )
-
             supabase.from("customers").insert(customer)
             onSuccess()
         } catch (e: Exception) {
@@ -80,9 +95,7 @@ class CustomerRepositoryImpl(
                 this.email = email
                 this.password = password
             }
-
             val userInfo = supabase.auth.currentUserOrNull()
-
             if (userInfo != null) {
                 createCustomer(
                     user = userInfo,
@@ -94,7 +107,6 @@ class CustomerRepositoryImpl(
             } else {
                 onSuccess()
             }
-
         } catch (e: Exception) {
             onError("Ошибка регистрации: ${e.message}")
         }
@@ -102,20 +114,20 @@ class CustomerRepositoryImpl(
 
     override fun readCustomerFlow(): Flow<RequestState<Customer>> = flow {
         emit(RequestState.Loading)
-        val userId = getCurrentUserId() ?: return@flow
-
+        val userId = getCurrentUserId()
+        if (userId == null) {
+            emit(RequestState.Error("Пользователь не авторизован"))
+            return@flow
+        }
         try {
-            val customer = withTimeout(5000) {
-                supabase.from("customers")
-                    .select { filter { eq("id", userId) } }
-                    .decodeSingle<Customer>()
-            }
+            val customer = supabase.from("customers")
+                .select { filter { eq("id", userId) } }
+                .decodeSingle<Customer>()
             emit(RequestState.Success(customer))
         } catch (e: Exception) {
-            emit(RequestState.Error("Не удалось обновить корзину"))
+            emit(RequestState.Error("Не удалось загрузить профиль: ${e.message}"))
         }
     }
-
 
     override suspend fun updateCustomer(
         customer: Customer,
@@ -124,105 +136,28 @@ class CustomerRepositoryImpl(
     ) {
         try {
             supabase.from("customers").update(customer) {
-                filter { eq("id", customer.id) }
+                filter { eq("id", customer.id!!) }
             }
             onSuccess()
         } catch (e: Exception) {
-            onError("Ошибка обновления.: ${e.message}")
-        }
-    }
-
-    override suspend fun addItemToCard(
-        cartItem: CartItem,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        try {
-            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
-            val customer = supabase.from("customers")
-                .select { filter { eq("id", userId) } }
-                .decodeSingle<Customer>()
-            val updatedCart = customer.cart + cartItem
-            supabase.from("customers").update(
-                { set("cart", updatedCart) }
-            ) {
-                filter { eq("id", userId) }
-            }
-            onSuccess()
-        } catch (e: Exception) {
-            onError("Ошибка добавления в корзину: ${e.message}")
-        }
-    }
-
-    override suspend fun updateCartItemQuantity(
-        id: String,
-        quantity: Int,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        try {
-            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
-
-            supabase.postgrest.rpc(
-                function = "update_cart_item_quantity",
-                parameters = UpdateCartParams(
-                    p_customer_id = userId,
-                    p_item_id = id,
-                    p_new_quantity = quantity
-                )
-            )
-            onSuccess()
-        } catch (e: Exception) {
-            onError("Ошибка сервера: ${e.message}")
-        }
-    }
-
-    override suspend fun deleteCartItem(
-        id: String,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        try {
-            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
-
-            val customer = supabase.from("customers")
-                .select(Columns.list("cart")) {
-                    filter { eq("id", userId) }
-                }.decodeSingle<Customer>()
-
-            val updatedCart = customer.cart.filterNot { it.id == id }
-
-            supabase.from("customers").update(
-                { set("cart", updatedCart) }
-            ) {
-                filter { eq("id", userId) }
-            }
-            onSuccess()
-        } catch (e: Exception) {
-            onError("Ошибка удаления из корзины: ${e.message}")
-        }
-    }
-
-    override suspend fun deleteAllCartItems(
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        try {
-            val userId = getCurrentUserId() ?: return onError("Пользователь не авторизован.")
-
-            supabase.from("customers").update(
-                { set("cart", emptyList<CartItem>()) }
-            ) {
-                filter { eq("id", userId) }
-            }
-            onSuccess()
-        } catch (e: Exception) {
-            onError("Ошибка очистки корзины: ${e.message}")
+            onError("Ошибка обновления: ${e.message}")
         }
     }
 
     override suspend fun signOut(): RequestState<Unit> {
         return try {
+            val userId = getCurrentUserId()
+            if (userId != null) {
+                val token = notifications.getToken()
+                if (token != null) {
+                    supabase.from("fcm_tokens").delete {
+                        filter {
+                            eq("user_id", userId)
+                            eq("token", token)
+                        }
+                    }
+                }
+            }
             supabase.auth.signOut()
             RequestState.Success(Unit)
         } catch (e: Exception) {

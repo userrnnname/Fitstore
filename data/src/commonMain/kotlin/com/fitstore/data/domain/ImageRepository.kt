@@ -1,8 +1,5 @@
 package com.fitstore.data.domain
 
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.storage.storage
-
 interface ImageRepository {
 
     suspend fun uploadImage(

@@ -32,7 +32,7 @@ import org.jetbrains.compose.resources.painterResource
 @Composable
 fun BottomBar(
     modifier: Modifier = Modifier,
-    customer: RequestState<Customer>,
+    isCartNotEmpty: Boolean,
     selected: BottomBarDestination,
     onSelect: (BottomBarDestination) -> Unit
 ) {
@@ -59,23 +59,16 @@ fun BottomBar(
                     contentDescription = "Назначения нижней панели",
                     tint = animatedTint
                 )
-                if (destination == BottomBarDestination.Cart) {
-                    AnimatedContent(
-                        targetState = customer
-                    ) { customerState ->
-                        if (customerState.isSuccess() && customerState.getSuccessData().cart.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .offset(x = 4.dp, y = (-4).dp)
-                                    .clip(CircleShape)
-                                    .background(IconThird)
-                            )
-                        }
-                    }
+                if (destination == BottomBarDestination.Cart && isCartNotEmpty) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .offset(x = 4.dp, y = (-4).dp)
+                            .clip(CircleShape)
+                            .background(IconThird)
+                    )
                 }
             }
         }
-
     }
 }

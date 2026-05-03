@@ -24,6 +24,7 @@ import com.fitstore.shared.FontSize
 import com.fitstore.shared.IconSecondary
 import com.fitstore.shared.SurfaceDarker
 import com.fitstore.shared.SurfaceLighter
+import com.fitstore.shared.SurfaceSecondary
 import com.fitstore.shared.TextPrimary
 
 
@@ -72,6 +73,11 @@ fun CustomTextField(
         visualTransformation = visualTransformation,
         trailingIcon = trailingIcon,
         colors = TextFieldDefaults.colors(
+            cursorColor = TextPrimary,
+            selectionColors = TextSelectionColors(
+                handleColor = IconSecondary,
+                backgroundColor = SurfaceSecondary.copy(alpha = 0.4f)
+            ),
             unfocusedContainerColor = SurfaceLighter,
             focusedContainerColor = SurfaceLighter,
             focusedTextColor = TextPrimary,
@@ -84,11 +90,7 @@ fun CustomTextField(
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             errorIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            selectionColors = TextSelectionColors(
-                handleColor = IconSecondary,
-                backgroundColor = Color.Unspecified
-            )
+            disabledIndicatorColor = Color.Transparent
         )
     )
 }

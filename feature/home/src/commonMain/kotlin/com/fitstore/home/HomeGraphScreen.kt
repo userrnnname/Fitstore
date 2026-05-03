@@ -24,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -36,6 +37,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -68,6 +71,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 import rememberMessageBarState
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeGraphScreen(
@@ -79,14 +83,15 @@ fun HomeGraphScreen(
     navigateToCheckout: (String) -> Unit
 ) {
     val navController = rememberNavController()
-    val currentRoute = navController.currentBackStackEntryAsState()
-    val selectedDestination by remember {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+
+    val selectedDestination by remember(navBackStackEntry) {
         derivedStateOf {
-            val route = currentRoute.value?.destination?.route.toString()
+            val destination = navBackStackEntry?.destination
             when {
-                route.contains(BottomBarDestination.ProductsOverview.screen.toString()) -> BottomBarDestination.ProductsOverview
-                route.contains(BottomBarDestination.Cart.screen.toString()) -> BottomBarDestination.Cart
-                route.contains(BottomBarDestination.Categories.screen.toString()) -> BottomBarDestination.Categories
+                destination?.hasRoute<Screen.ProductsOverview>() == true -> BottomBarDestination.ProductsOverview
+                destination?.hasRoute<Screen.Cart>() == true -> BottomBarDestination.Cart
+                destination?.hasRoute<Screen.Categories>() == true -> BottomBarDestination.Categories
                 else -> BottomBarDestination.ProductsOverview
             }
         }
@@ -116,21 +121,18 @@ fun HomeGraphScreen(
     val customer by viewModel.customer.collectAsState()
     val cartViewModel = koinViewModel<CartViewModel>()
     val cartState by cartViewModel.cartItemsWithProducts.collectAsState()
-    val totalAmount by cartViewModel.totalAmountFlow.collectAsState(RequestState.Loading)
+    val cartStateValue = cartState
+    val isCartNotEmpty = cartStateValue is RequestState.Success && cartStateValue.data.isNotEmpty()
+    val totalAmount by cartViewModel.totalAmount.collectAsState()
     val messageBarState = rememberMessageBarState()
 
-    val shouldShowCheckoutButton by remember {
+    val shouldShowCheckoutButton by remember(navBackStackEntry, cartState) {
         derivedStateOf {
             selectedDestination == BottomBarDestination.Cart &&
                     cartState is RequestState.Success &&
                     (cartState as RequestState.Success).data.isNotEmpty()
         }
     }
-    val canNavigateToCheckout by remember {
-        derivedStateOf { totalAmount is RequestState.Success }
-    }
-
-
 
     Box(
         modifier = Modifier
@@ -184,18 +186,19 @@ fun HomeGraphScreen(
                                 visible = shouldShowCheckoutButton
                             ) {
                                 IconButton(
-                                    enabled = canNavigateToCheckout,
+                                    enabled = totalAmount > 0,
                                     onClick = {
-                                    if (totalAmount.isSuccess()) {
-                                        navigateToCheckout(totalAmount.getSuccessData().toString())
-                                    } else if (totalAmount.isError()) {
-                                        messageBarState.addError("Ошибка при расчете общей суммы: ${totalAmount.getErrorMessage()}")
+                                        if (totalAmount > 0) {
+                                            navigateToCheckout(totalAmount.toString())
+                                        } else {
+                                            messageBarState.addError("Корзина пуста")
+                                        }
                                     }
-                                }) {
+                                ) {
                                     Icon(
                                         painter = painterResource(Resources.Icon.RightArrow),
                                         contentDescription = "Оформить",
-                                        tint = if (canNavigateToCheckout) IconPrimary else IconPrimary.copy(alpha = Alpha.DISABLED))
+                                        tint = if (totalAmount > 0) IconPrimary else IconPrimary.copy(alpha = Alpha.DISABLED))
                                 }
                             }
                         },
@@ -274,7 +277,7 @@ fun HomeGraphScreen(
                                 .padding(all = 12.dp)
                         ) {
                             BottomBar(
-                                customer = customer,
+                                isCartNotEmpty = isCartNotEmpty,
                                 selected = selectedDestination,
                                 onSelect = { destination ->
                                     navController.navigate(destination.screen) {

@@ -6,8 +6,11 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitstore.data.domain.CustomerRepository
+import com.fitstore.data.domain.OrderRepository
 import com.fitstore.data.domain.SupplementRepository
+import com.fitstore.shared.domain.Product
 import com.fitstore.shared.domain.SupplementTrack
+import com.fitstore.shared.notifications.PlatformNotification
 import com.fitstore.shared.util.RequestState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,50 +25,55 @@ data class ProfileScreenState(
     val lastName: String = "",
     val firstName: String = "",
     val email: String = "",
-    val supplements: List<SupplementTrack> = emptyList()
-    //val lastPurchases: List<Product> = emptyList()
+    val supplements: List<SupplementTrack> = emptyList(),
+    val lastPurchases: List<Product> = emptyList()
 )
 
 class ProfileViewModel(
     private val customerRepository: CustomerRepository,
-    private val supplementRepository: SupplementRepository
+    private val supplementRepository: SupplementRepository,
+    private val orderRepository: OrderRepository,
+    private val notifications: PlatformNotification
 ) : ViewModel() {
-    private val refreshSignal = MutableStateFlow(0)
     var screenReady: RequestState<Unit> by mutableStateOf(RequestState.Loading)
     var screenState by mutableStateOf(ProfileScreenState())
         private set
 
-    init { readCustomerFlow() }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun readCustomerFlow() {
+    private fun loadLastPurchases() {
         viewModelScope.launch {
-            refreshSignal.flatMapLatest {
-                combine(
-                    customerRepository.readCustomerFlow(),
-                    supplementRepository.readSupplementTracksFlow()
-                ) { customerResult, tracksResult ->
-                    if (customerResult.isSuccess()) {
+            val userId = customerRepository.getCurrentUserId() ?: return@launch
+            val purchases = orderRepository.getLastPurchasedProducts(userId, 3)
+            screenState = screenState.copy(lastPurchases = purchases)
+        }
+    }
+
+    init {
+        viewModelScope.launch {
+            combine(
+                customerRepository.readCustomerFlow(),
+                supplementRepository.readSupplementTracksFlow()
+            ) { customerResult, tracksResult ->
+                when {
+                    customerResult.isSuccess() -> {
                         val customer = customerResult.getSuccessData()
                         val tracks = if (tracksResult.isSuccess()) tracksResult.getSuccessData() else emptyList()
-
                         screenState = screenState.copy(
-                            id = customer.id,
+                            id = customer.id ?: return@combine,
                             firstName = customer.firstName,
                             lastName = customer.lastName,
                             email = customer.email,
                             supplements = tracks
                         )
-
-                        if (screenReady is RequestState.Loading) {
+                        if (screenReady is RequestState.Loading)
                             screenReady = RequestState.Success(Unit)
-                        }
-                    } else if (customerResult.isError() && screenReady is RequestState.Loading) {
+                    }
+                    customerResult.isError() && screenReady is RequestState.Loading -> {
                         screenReady = RequestState.Error(customerResult.getErrorMessage())
                     }
                 }
             }.collect()
         }
+        loadLastPurchases()
     }
 
     fun takeServing(track: SupplementTrack, onError: (String) -> Unit) {
@@ -84,7 +92,7 @@ class ProfileViewModel(
 
             supplementRepository.takeServing(
                 track = track,
-                onSuccess = { refreshSignal.value++ },
+                onSuccess = { notifications.scheduleReminder(24) },
                 onError = {
                     screenState = screenState.copy(supplements = oldSupplements)
                     onError(it)
@@ -108,7 +116,6 @@ class ProfileViewModel(
             supplementRepository.updateSupplementTrack(
                 track = updatedTrack,
                 onSuccess = {
-                    refreshSignal.value++
                     val updatedList = screenState.supplements.map { item ->
                         if (item.id == track.id) updatedTrack else item
                     }
@@ -123,7 +130,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             supplementRepository.deleteSupplementTrack(
                 trackId = id,
-                onSuccess = { refreshSignal.value++ },
+                onSuccess = {},
                 onError = onError
             )
         }

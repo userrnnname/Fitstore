@@ -48,7 +48,7 @@ class EditProfileViewModel(
                 if (result.isSuccess()) {
                     val c = result.getSuccessData()
                     screenState = EditProfileState(
-                        c.id,
+                        c.id!!,
                         c.lastName,
                         c.firstName,
                         c.email, 
@@ -67,7 +67,12 @@ class EditProfileViewModel(
     fun updateCity(v: String) { screenState = screenState.copy(city = v) }
     fun updateAddress(v: String) { screenState = screenState.copy(address = v) }
     fun updatePostalCode(v: Int?) { screenState = screenState.copy(postalCode = v) }
-    fun updatePhoneNumber(v: String) { screenState = screenState.copy(phoneNumber = PhoneNumber(7, v)) }
+    fun updatePhoneNumber(v: String) {
+        val currentDialCode = screenState.phoneNumber?.dialCode ?: 7
+        screenState = screenState.copy(
+            phoneNumber = PhoneNumber(currentDialCode, v)
+        )
+    }
 
     fun updateCustomer(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {

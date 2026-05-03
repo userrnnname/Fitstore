@@ -25,11 +25,12 @@ data class ManageProductState(
     val thumbnail: String = "",
     val category: ProductCategory = ProductCategory.Protein,
     val flavors: String = "",
-    val weight: Int? = null,
-    val price: Double = 0.0,
+    val priceString: String = "",
+    val weightString: String = "",
+    val servingsString: String = "",
     val isNew: Boolean = false,
     val isPopular: Boolean = false,
-    val isDiscounted: Boolean = false
+    val isDiscounted: Boolean = false,
 )
 
 class ManageProductViewModel(
@@ -44,11 +45,13 @@ class ManageProductViewModel(
     var thumbnailUploaderState: RequestState<Unit> by mutableStateOf(RequestState.Idle)
         private set
 
-    val isFormValid: Boolean
-        get() = screenState.title.isNotEmpty() &&
+    val isFormValid: Boolean get() {
+        val price = screenState.priceString.toDoubleOrNull()
+        return screenState.title.isNotEmpty() &&
                 screenState.description.isNotEmpty() &&
                 screenState.thumbnail.isNotEmpty() &&
-                screenState.price != 0.0
+                price != null && price > 0
+    }
 
     init {
         productId.takeIf { it.isNotEmpty() }?.let { id ->
@@ -57,101 +60,93 @@ class ManageProductViewModel(
                 if (selectedProduct.isSuccess()) {
                     val product = selectedProduct.getSuccessData()
 
-                    updateId(product.id)
-                    updateCreatedAt(product.createdAt)
-                    updateTitle(product.title)
-                    updateDescription(product.description)
-                    updateThumbnail(product.thumbnail)
+                    screenState = screenState.copy(
+                        id = product.id!!,
+                        createdAt = product.createdAt,
+                        title = product.title,
+                        description = product.description,
+                        thumbnail = product.thumbnail,
+                        category = ProductCategory.valueOf(product.category),
+                        flavors = product.flavors?.joinToString(",") ?: "",
+                        priceString = if (product.price == 0.0) "" else product.price.toFormattedString(),
+                        weightString = product.weight?.toString() ?: "",
+                        servingsString = product.servings?.toString() ?: "",
+                        isNew = product.isNew,
+                        isPopular = product.isPopular,
+                        isDiscounted = product.isDiscounted
+                    )
                     updateThumbnailUploaderState(RequestState.Success(Unit))
-                    updateCategory(ProductCategory.valueOf(product.category))
-                    updateFlavors(product.flavors?.joinToString(",") ?: "")
-                    updateWeight(product.weight)
-                    updatePrice(product.price)
-                    updateNew(product.isNew)
-                    updatePopular(product.isPopular)
-                    updateDiscounted(product.isDiscounted)
                 }
             }
         }
     }
 
-    fun updateId(value: String) {
-        screenState = screenState.copy(id = value)
+    private fun Double.toFormattedString(): String {
+        return if (this % 1.0 == 0.0) this.toInt().toString() else this.toString()
     }
 
-    fun updateCreatedAt(value: Long) {
-        screenState = screenState.copy(createdAt = value)
+    fun updatePriceString(value: String) {
+        val filtered = value.filterIndexed { index, c ->
+            c.isDigit() || (c == '.' && value.indexOf('.') == index)
+        }
+        screenState = screenState.copy(priceString = filtered)
     }
-
-    fun updateTitle(value: String) {
-        screenState = screenState.copy(title = value)
+    fun updateWeightString(value: String) {
+        val filtered = value.filter { it.isDigit() }
+        screenState = screenState.copy(weightString = filtered)
     }
-
-    fun updateDescription(value: String) {
-        screenState = screenState.copy(description = value)
+    fun updateServingsString(value: String) {
+        screenState = screenState.copy(servingsString = value.filter { it.isDigit() })
     }
+    fun updateTitle(value: String) { screenState = screenState.copy(title = value) }
+    fun updateDescription(value: String) { screenState = screenState.copy(description = value) }
+    fun updateThumbnail(value: String) { screenState = screenState.copy(thumbnail = value) }
+    fun updateThumbnailUploaderState(value: RequestState<Unit>) { thumbnailUploaderState = value }
+    fun updateCategory(value: ProductCategory) { screenState = screenState.copy(category = value) }
+    fun updateFlavors(value: String) { screenState = screenState.copy(flavors = value) }
+    fun updateNew(value: Boolean) { screenState = screenState.copy(isNew = value) }
+    fun updatePopular(value: Boolean) { screenState = screenState.copy(isPopular = value) }
+    fun updateDiscounted(value: Boolean) { screenState = screenState.copy(isDiscounted = value) }
 
-    fun updateThumbnail(value: String) {
-        screenState = screenState.copy(thumbnail = value)
-    }
-
-    fun updateThumbnailUploaderState(value: RequestState<Unit>) {
-        thumbnailUploaderState = value
-    }
-
-    fun updateCategory(value: ProductCategory) {
-        screenState = screenState.copy(category = value)
-    }
-
-    fun updateFlavors(value: String) {
-        screenState = screenState.copy(flavors = value)
-    }
-
-    fun updateWeight(value: Int?) {
-        screenState = screenState.copy(weight = value)
-    }
-
-    fun updatePrice(value: Double) {
-        screenState = screenState.copy(price = value)
-    }
-
-    fun updateNew(value: Boolean) {
-        screenState = screenState.copy(isNew = value)
-    }
-
-    fun updatePopular(value: Boolean) {
-        screenState = screenState.copy(isPopular = value)
-    }
-
-    fun updateDiscounted(value: Boolean) {
-        screenState = screenState.copy(isDiscounted = value)
-    }
-
-    fun createNewProduct(
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
+    fun createNewProduct(onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
             adminRepository.createNewProduct(
-                product = Product(
-                    id = screenState.id,
-                    createdAt = screenState.createdAt,
-                    title = screenState.title,
-                    description = screenState.description,
-                    thumbnail = screenState.thumbnail,
-                    category = screenState.category.name,
-                    flavors = screenState.flavors.split(","),
-                    weight = screenState.weight,
-                    price = screenState.price,
-                    isNew = screenState.isNew,
-                    isPopular = screenState.isPopular,
-                    isDiscounted = screenState.isDiscounted
-                ),
+                product = buildProduct(),
                 onSuccess = onSuccess,
                 onError = onError
             )
         }
     }
+
+    fun updateProduct(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (isFormValid) {
+            viewModelScope.launch {
+                adminRepository.updateProduct(
+                    product = buildProduct(),
+                    onSuccess = onSuccess,
+                    onError = onError
+                )
+            }
+        } else {
+            onError("Пожалуйста заполните информацию.")
+        }
+    }
+
+    private fun buildProduct() = Product(
+        id = screenState.id,
+        createdAt = screenState.createdAt,
+        title = screenState.title,
+        description = screenState.description,
+        thumbnail = screenState.thumbnail,
+        category = screenState.category.name,
+        flavors = screenState.flavors.split(",").map { it.trim() }.filter { it.isNotEmpty() },
+        weight = screenState.weightString.toIntOrNull(),
+        price = screenState.priceString.toDoubleOrNull() ?: 0.0,
+        servings = screenState.servingsString.toIntOrNull(),
+        isNew = screenState.isNew,
+        isPopular = screenState.isPopular,
+        isDiscounted = screenState.isDiscounted
+    )
 
     fun uploadThumbnailToStorage(
         byteArray: ByteArray?,
@@ -196,38 +191,6 @@ class ManageProductViewModel(
             } catch (e: Exception) {
                 updateThumbnailUploaderState(RequestState.Error("Ошибка при загрузке: ${e.message}"))
             }
-        }
-    }
-
-    fun updateProduct(
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        if (isFormValid) {
-            viewModelScope.launch {
-                adminRepository.updateProduct(
-                    product = Product(
-                        id = screenState.id,
-                        createdAt = screenState.createdAt,
-                        title = screenState.title,
-                        description = screenState.description,
-                        thumbnail = screenState.thumbnail,
-                        category = screenState.category.name,
-                        flavors = screenState.flavors.split(",")
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() },
-                        weight = screenState.weight,
-                        price = screenState.price,
-                        isNew = screenState.isNew,
-                        isPopular = screenState.isPopular,
-                        isDiscounted = screenState.isDiscounted
-                    ),
-                    onSuccess = onSuccess,
-                    onError = onError
-                )
-            }
-        } else {
-            onError("Пожалуйста заполните информацию.")
         }
     }
 

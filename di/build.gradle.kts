@@ -28,9 +28,12 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.ktor.android.client)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.ktor.client.websockets)
         }
         iosMain.dependencies {
             implementation(libs.ktor.darwin.client)
+            implementation(libs.ktor.client.websockets)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -50,6 +53,7 @@ kotlin {
             implementation(libs.kotlinx.serialization)
 
             implementation(libs.supabase.postgrest)
+            implementation(libs.supabase.functions)
             implementation(libs.supabase.auth)
             implementation(libs.supabase.storage)
             implementation(libs.supabase.realtime)
@@ -74,6 +78,7 @@ kotlin {
             implementation(project(path = ":feature:admin_panel"))
             implementation(project(path = ":feature:admin_panel:manage_product"))
             implementation(project(path = ":data"))
+            implementation(project(path = ":shared"))
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -87,7 +92,7 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        testOptions.targetSdk = libs.versions.android.targetSdk.get().toInt()
     }
 
     compileOptions {

@@ -32,6 +32,11 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.splash.screen)
             implementation(libs.koin.android)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.ktor.android.client)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
+            implementation(libs.androidx.work.runtime.ktx)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -43,9 +48,10 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
+            implementation("co.touchlab:kermit:2.0.2")
+
             implementation(libs.supabase.postgrest)
             implementation(libs.supabase.auth)
-            implementation(libs.supabase.storage)
 
             implementation(libs.koin.compose)
 
@@ -90,6 +96,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.firebase.messaging)
     debugImplementation(libs.compose.uiTooling)
 }
 

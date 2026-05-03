@@ -41,6 +41,7 @@ kotlin {
             implementation(libs.supabase.storage)
             implementation(libs.supabase.auth)
             implementation(libs.supabase.realtime)
+            implementation(libs.supabase.functions)
 
             implementation(libs.koin.core)
 
@@ -65,7 +66,7 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        testOptions.targetSdk = libs.versions.android.targetSdk.get().toInt()
     }
 
     compileOptions {

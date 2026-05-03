@@ -5,26 +5,18 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Customer(
-    val id: String,
-    @SerialName("lastName")
-    val lastName: String,
-    @SerialName("firstName")
-    val firstName: String,
+    val id: String? = null,
+    @SerialName("first_name") val firstName: String,
+    @SerialName("last_name") val lastName: String,
     val email: String,
     val city: String? = null,
-    @SerialName("postalCode")
-    val postalCode: Int? = null,
+    @SerialName("postal_code") val postalCode: Int? = null,
     val address: String? = null,
-    @SerialName("phoneNumber")
-    val phoneNumber: PhoneNumber? = null,
-    val cart: List<CartItem> = emptyList(),
-    @SerialName("isAdmin")
-    val isAdmin: Boolean = false
+    @SerialName("phone_number") val phoneNumber: PhoneNumber? = null,
+    @SerialName("is_admin") val isAdmin: Boolean = false
 )
-
 @Serializable
 data class PhoneNumber(
-        @SerialName("dialCode")
-        val dialCode: Int,
+        @SerialName("dial_code") val dialCode: Int,
         val number: String
         )

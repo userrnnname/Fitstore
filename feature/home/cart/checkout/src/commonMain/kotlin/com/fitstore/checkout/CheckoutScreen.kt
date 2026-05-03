@@ -50,8 +50,9 @@ fun CheckoutScreen(
     val messageBarState = rememberMessageBarState()
     val viewModel = koinViewModel<CheckoutViewModel>{ parametersOf(paymentLauncher) }
     val screenState = viewModel.screenState
-    val isFormValid = viewModel.isFormValid
     val totalAmount by viewModel.totalAmount.collectAsState()
+    val isFormValid = viewModel.isFormValid
+    val isPaymentLoading = viewModel.isPaymentLoading
     LaunchedEffect(paymentLauncher) {
         paymentLauncher?.initialize()
     }
@@ -142,7 +143,7 @@ fun CheckoutScreen(
                     PrimaryButton(
                         text = if (viewModel.isPaymentLoading) "Загрузка..." else "Оплатить онлайн",
                         icon = Resources.Icon.CreditCard,
-                        enabled = viewModel.isFormValid && !viewModel.isPaymentLoading,
+                        enabled = isFormValid && !isPaymentLoading && totalAmount > 0,
                         onClick = {
                             viewModel.startOnlinePayment(
                                 onSuccess = { amount ->
@@ -159,7 +160,7 @@ fun CheckoutScreen(
                         text = "Оплата при доставке",
                         icon = Resources.Icon.ShoppingCart,
                         secondary = true,
-                        enabled = isFormValid,
+                        enabled = isFormValid && !isPaymentLoading && totalAmount > 0,
                         onClick = {
                             viewModel.payOnDelivery(
                                 onSuccess = {

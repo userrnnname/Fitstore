@@ -6,9 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fitstore.data.domain.CartRepository
 import com.fitstore.data.domain.CustomerRepository
 import com.fitstore.data.domain.ProductRepository
-import com.fitstore.shared.domain.CartItem
 import com.fitstore.shared.util.RequestState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 
 class DetailsViewModel(
     private val productRepository: ProductRepository,
+    private val cartRepository: CartRepository,
     private val customerRepository: CustomerRepository,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -46,19 +47,28 @@ class DetailsViewModel(
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
+            val userId = customerRepository.getCurrentUserId()
+            if (userId == null) {
+                onError("Пользователь не авторизован.")
+                return@launch
+            }
             val productId = savedStateHandle.get<String>("id")
-            if (productId != null) {
-                customerRepository.addItemToCard(
-                    cartItem = CartItem(
-                        productId = productId,
-                        flavor = selectedFlavor,
-                        quantity = quantity
-                    ),
-                    onSuccess = onSuccess,
-                    onError = onError
-                )
-            } else {
+            if (productId == null) {
                 onError("ID товара не найден.")
+                return@launch
+            }
+
+            try {
+                val cart = cartRepository.getOrCreateCart(userId)
+                cartRepository.addOrUpdateItem(
+                    cartId = cart.id!!,
+                    productId = productId,
+                    flavor = selectedFlavor,
+                    quantity = quantity
+                )
+                onSuccess()
+            } catch (e: Exception) {
+                onError("Ошибка добавления в корзину: ${e.message}")
             }
         }
     }

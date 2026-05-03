@@ -5,6 +5,7 @@ expect class PaymentLauncher {
     fun launchPayment(
         amount: Double,
         orderId: String,
+        paymentUrl: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     )

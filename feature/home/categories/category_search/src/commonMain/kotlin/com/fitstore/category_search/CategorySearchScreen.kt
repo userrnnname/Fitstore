@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -18,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarColors
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SearchBarDefaults.inputFieldColors
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -34,9 +36,11 @@ import com.fitstore.shared.K2DFont
 import com.fitstore.shared.BorderIdle
 import com.fitstore.shared.FontSize
 import com.fitstore.shared.IconPrimary
+import com.fitstore.shared.IconSecondary
 import com.fitstore.shared.Resources
 import com.fitstore.shared.Surface
 import com.fitstore.shared.SurfaceLighter
+import com.fitstore.shared.SurfaceSecondary
 import com.fitstore.shared.TextPrimary
 import com.fitstore.shared.component.InfoCard
 import com.fitstore.shared.component.LoadingCard
@@ -98,9 +102,24 @@ fun CategorySearchScreen(
                                 }
                             )
                         },
-                        colors = SearchBarColors(
+                        colors = SearchBarDefaults.colors(
                             containerColor = SurfaceLighter,
-                            dividerColor = BorderIdle
+                            dividerColor = BorderIdle,
+                            inputFieldColors = SearchBarDefaults.inputFieldColors(
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedPlaceholderColor = TextPrimary.copy(alpha = 0.5f),
+                                unfocusedPlaceholderColor = TextPrimary.copy(alpha = 0.5f),
+                                focusedTrailingIconColor = TextPrimary,
+                                unfocusedTrailingIconColor = TextPrimary,
+                                focusedLeadingIconColor = TextPrimary,
+                                unfocusedLeadingIconColor = TextPrimary,
+                                cursorColor = TextPrimary,
+                                selectionColors = TextSelectionColors(
+                                    handleColor = IconSecondary,
+                                    backgroundColor = SurfaceSecondary.copy(alpha = 0.4f)
+                                )
+                            )
                         ),
                         expanded = false,
                         onExpandedChange = {},
@@ -166,7 +185,7 @@ fun CategorySearchScreen(
                         ) {
                             items(
                                 items = products,
-                                key = { it.id }
+                                key = { it.id!! }
                             ) { product ->
                                 ProductCard(
                                     product = product,

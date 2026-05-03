@@ -347,8 +347,8 @@ fun ManageProductScreen(
                     ) {
                         Column {
                             CustomTextField(
-                                value = "${screenState.weight ?: ""}",
-                                onValueChange = { viewModel.updateWeight(it.toIntOrNull() ?: 0) },
+                                value = screenState.weightString,
+                                onValueChange = viewModel::updateWeightString,
                                 placeholder = "Вес",
                                 keyboardOptions = KeyboardOptions(
                                     keyboardType = KeyboardType.Number
@@ -363,16 +363,18 @@ fun ManageProductScreen(
                         }
                     }
                     CustomTextField(
-                        value = "${screenState.price}",
-                        onValueChange = { value ->
-                            if (value.isEmpty() || value.toDoubleOrNull() != null) {
-                                viewModel.updatePrice(value.toDoubleOrNull() ?: 0.0)
-                            }
-                        },
+                        value = screenState.priceString,
+                        onValueChange = viewModel::updatePriceString,
                         placeholder = "Цена",
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Number
                         )
+                    )
+                    CustomTextField(
+                        value = screenState.servingsString,
+                        onValueChange = viewModel::updateServingsString,
+                        placeholder = "Количество порций",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                     Column(
                         modifier = Modifier.fillMaxWidth(),

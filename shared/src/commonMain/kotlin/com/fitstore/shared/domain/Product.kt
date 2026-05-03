@@ -14,9 +14,8 @@ import kotlin.time.ExperimentalTime
 @OptIn(ExperimentalTime::class)
 @Serializable
 data class Product(
-    val id: String,
-    @SerialName("createdAt")
-    val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
+    val id: String? = null,
+    @SerialName("created_at") val createdAt: Long = Clock.System.now().toEpochMilliseconds(),
     val title: String,
     val description: String,
     val thumbnail: String,
@@ -24,36 +23,29 @@ data class Product(
     val flavors: List<String>? = null,
     val weight: Int? = null,
     val price: Double,
-    @SerialName("isPopular")
-    val isPopular: Boolean = false,
-    @SerialName("isDiscounted")
-    val isDiscounted: Boolean = false,
-    @SerialName("isNew")
-    val isNew: Boolean = false
+    val servings: Int? = null,
+    @SerialName("is_popular") val isPopular: Boolean = false,
+    @SerialName("is_discounted") val isDiscounted: Boolean = false,
+    @SerialName("is_new") val isNew: Boolean = false
 )
 
-enum class ProductCategory(
-    val title: String,
-    val color: Color
-) {
-    Protein(
-        title = "ПРОТЕИН",
-        color = CategoryYellow
-    ),
-    Creatine(
-        title = "КРЕАТИН",
-        color = CategoryBlue
-    ),
-    PreWorkout(
-        title = "ПЕРЕД ТРЕНИРОВКОЙ",
-        color = CategoryGreen
-    ),
-    Gainers(
-        title = "ГЕЙНЕРЫ",
-        color = CategoryPurple
-    ),
-    Accessories(
-        title = "АКСЕССУАРЫ",
-        color = CategoryRed
-    )
+enum class ProductCategory(val title: String, val color: Color) {
+    Protein("ПРОТЕИН", CategoryYellow),
+    Creatine("КРЕАТИН", CategoryBlue),
+    PreWorkout("ПЕРЕД ТРЕНИРОВКОЙ", CategoryGreen),
+    Gainers("ГЕЙНЕРЫ", CategoryPurple),
+    Accessories("АКСЕССУАРЫ", CategoryRed);
+
+    companion object {
+        fun fromString(value: String?): ProductCategory {
+            return when (value?.lowercase()) {
+                "protein" -> Protein
+                "creatine" -> Creatine
+                "preworkout" -> PreWorkout
+                "gainers" -> Gainers
+                "accessories" -> Accessories
+                else -> Protein
+            }
+        }
+    }
 }

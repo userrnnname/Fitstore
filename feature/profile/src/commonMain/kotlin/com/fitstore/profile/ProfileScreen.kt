@@ -19,6 +19,7 @@ import com.fitstore.profile.component.SupplementCard
 import com.fitstore.shared.*
 import com.fitstore.shared.component.InfoCard
 import com.fitstore.shared.component.LoadingCard
+import com.fitstore.shared.component.ProductCard
 import com.fitstore.shared.component.dialog.ServingsDialog
 import com.fitstore.shared.domain.SupplementTrack
 import com.fitstore.shared.util.DisplayResult
@@ -30,7 +31,8 @@ import rememberMessageBarState
 @Composable
 fun ProfileScreen(
     navigateBack: () -> Unit,
-    navigateToEditProfile: () -> Unit
+    navigateToEditProfile: () -> Unit,
+    navigateToDetails: (String) -> Unit
 ) {
     val viewModel = koinViewModel<ProfileViewModel>()
     val screenReady = viewModel.screenReady
@@ -206,28 +208,24 @@ fun ProfileScreen(
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
-
-                            /*if (screenState.lastPurchases.isEmpty()) {
+                            if (screenState.lastPurchases.isEmpty()) {
                                 InfoCard(
-                                    image = Resources.Image.Cart,
+                                    image = Resources.Image.ShoppingCart,
                                     title = "История пуста",
                                     subtitle = "Ознакомьтесь с нашим ассортиментом товаров"
                                 )
                             } else {
                                 Column(
-                                    modifier = Modifier.padding(horizontal = 24.dp),
                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     screenState.lastPurchases.take(3).forEach { product ->
                                         ProductCard(
                                             product = product,
-                                            onClick = { /* Навигация на Details */ }
+                                            onClick = { navigateToDetails(product.id!!) }
                                         )
                                     }
                                 }
-                            }*/
-
-                            Spacer(modifier = Modifier.height(24.dp))
+                            }
                         }
                     }
                 )

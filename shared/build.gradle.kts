@@ -27,6 +27,17 @@ kotlin {
     }
 
     sourceSets {
+        androidMain.dependencies {
+            implementation(libs.androidx.work.runtime.ktx)
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.ktor.android.client)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.darwin.client)
+        }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -40,8 +51,18 @@ kotlin {
             implementation(libs.kotlinx.serialization)
             implementation(libs.kotlinx.datetime)
 
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.serialization)
+            implementation(libs.ktor.client.logging)
+            implementation(libs.ktor.client.websockets)
+
+            implementation(libs.alarmee)
+
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
+
+            implementation(libs.supabase.postgrest)
 
             implementation(libs.multiplatform.settings)
             implementation(libs.multiplatform.settings.no.arg)
@@ -64,7 +85,7 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
-        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        testOptions.targetSdk = libs.versions.android.targetSdk.get().toInt()
     }
 
     compileOptions {

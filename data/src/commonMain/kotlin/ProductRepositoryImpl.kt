@@ -9,7 +9,6 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withTimeout
 
 class ProductRepositoryImpl(
     private val supabase: SupabaseClient
@@ -22,13 +21,10 @@ class ProductRepositoryImpl(
         try {
             val response = supabase.postgrest["products"]
                 .select {
-                    filter {
-                        eq("\"isDiscounted\"", true)
-                    }
+                    filter { eq("is_discounted", true) }
                 }
                 .decodeList<Product>()
-
-            emit(RequestState.Success(response.map { it.copy(title = it.title.uppercase()) }))
+            emit(RequestState.Success(response))
         } catch (e: Exception) {
             emit(RequestState.Error("Ошибка чтения товаров со скидкой: ${e.message}"))
         }
@@ -39,13 +35,10 @@ class ProductRepositoryImpl(
         try {
             val response = supabase.postgrest["products"]
                 .select {
-                    filter {
-                        eq("\"isNew\"", true)
-                    }
+                    filter { eq("is_new", true) }
                 }
                 .decodeList<Product>()
-
-            emit(RequestState.Success(response.map { it.copy(title = it.title.uppercase()) }))
+            emit(RequestState.Success(response))
         } catch (e: Exception) {
             emit(RequestState.Error("Ошибка чтения новых товаров: ${e.message}"))
         }
@@ -56,12 +49,10 @@ class ProductRepositoryImpl(
         try {
             val product = supabase.postgrest["products"]
                 .select {
-                    filter {
-                        eq("id", id)
-                    }
-                }.decodeSingle<Product>()
-
-            emit(RequestState.Success(product.copy(title = product.title.uppercase())))
+                    filter { eq("id", id) }
+                }
+                .decodeSingle<Product>()
+            emit(RequestState.Success(product))
         } catch (e: Exception) {
             emit(RequestState.Error("Товар не найден: ${e.message}"))
         }
@@ -74,19 +65,12 @@ class ProductRepositoryImpl(
             return@flow
         }
         try {
-            val response = withTimeout(5000) {
-                supabase.postgrest["products"]
-                    .select {
-                        filter {
-                            isIn("id", ids)
-                        }
-                    }
-                    .decodeList<Product>()
-            }
-
-            val formattedProducts = response.map { it.copy(title = it.title.uppercase()) }
-            emit(RequestState.Success(formattedProducts))
-
+            val response = supabase.postgrest["products"]
+                .select {
+                    filter { isIn("id", ids) }
+                }
+                .decodeList<Product>()
+            emit(RequestState.Success(response))
         } catch (e: Exception) {
             emit(RequestState.Error("Ошибка товаров: ${e.message}"))
         }
@@ -97,13 +81,10 @@ class ProductRepositoryImpl(
         try {
             val response = supabase.postgrest["products"]
                 .select {
-                    filter {
-                        eq("category", category.name)
-                    }
+                    filter { eq("category", category.name) }
                 }
                 .decodeList<Product>()
-
-            emit(RequestState.Success(response.map { it.copy(title = it.title.uppercase()) }))
+            emit(RequestState.Success(response))
         } catch (e: Exception) {
             emit(RequestState.Error("Ошибка чтения категорий: ${e.message}"))
         }

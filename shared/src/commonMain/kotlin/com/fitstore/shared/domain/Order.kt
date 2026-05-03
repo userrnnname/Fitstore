@@ -2,18 +2,14 @@ package com.fitstore.shared.domain
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalUuidApi::class)
 @Serializable
 data class Order(
     val id: String? = null,
-    @SerialName("customerId")
-    val customerId: String,
-    val items: List<CartItem>,
-    @SerialName("totalAmount")
-    val totalAmount: Double,
-    @SerialName("createdAt")
-    val createdAt: String? = null
+    @SerialName("customer_id") val customerId: String,
+    @SerialName("total_amount") val totalAmount: Double,
+    @SerialName("delivery_address") val deliveryAddress: String? = null,
+    @SerialName("phone_number") val phoneNumber: String? = null,
+    val status: String = "pending",
+    @SerialName("created_at") val createdAt: String? = null
 )

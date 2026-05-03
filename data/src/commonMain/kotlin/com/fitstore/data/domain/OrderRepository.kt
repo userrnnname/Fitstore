@@ -1,12 +1,13 @@
 package com.fitstore.data.domain
 
 import com.fitstore.shared.domain.Order
+import com.fitstore.shared.domain.Product
 
 interface OrderRepository {
-    fun getCurrentUserId(): String?
-    suspend fun createTheOrder(
-        order: Order,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    )
+    suspend fun createOrderFromCart(
+        userId: String,
+        deliveryAddress: String,
+        phoneNumber: String,
+    ): Result<Order>
+    suspend fun getLastPurchasedProducts(userId: String, limit: Int = 3): List<Product>
 }

@@ -1,10 +1,12 @@
 package com.fitstore.checkout
 
 import androidx.activity.ComponentActivity
+import com.fitstore.shared.domain.Order
 import com.yandex.pay.MerchantData
 import com.yandex.pay.MerchantId
 import com.yandex.pay.MerchantName
 import com.yandex.pay.MerchantUrl
+import com.yandex.pay.OrderId
 import com.yandex.pay.PaymentData
 import com.yandex.pay.PaymentSession
 import com.yandex.pay.YPay
@@ -13,6 +15,7 @@ import com.yandex.pay.YPayConfig
 import com.yandex.pay.YPayContractParams
 import com.yandex.pay.YPayLauncher
 import com.yandex.pay.YPayResult
+import java.util.Currency
 
 actual class PaymentLauncher(
     private val activity: ComponentActivity
@@ -66,6 +69,7 @@ actual class PaymentLauncher(
     actual fun launchPayment(
         amount: Double,
         orderId: String,
+        paymentUrl: String,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
@@ -73,7 +77,7 @@ actual class PaymentLauncher(
         this.onErrorCallback = onError
 
         val paymentData = PaymentData.PaymentUrlFlowData(
-            paymentUrl = "https://demo.yandex.ru/payment?orderId=$orderId&amount=$amount"
+            paymentUrl = paymentUrl
         )
         val params = YPayContractParams(
             paymentSession = paymentSession,

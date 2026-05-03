@@ -96,6 +96,9 @@ fun SetupNavGraph (
                 },
                 navigateToEditProfile = {
                     navController.navigate(Screen.EditProfile)
+                },
+                navigateToDetails = { productId ->
+                    navController.navigate(Screen.Details(id = productId))
                 }
             )
         }
