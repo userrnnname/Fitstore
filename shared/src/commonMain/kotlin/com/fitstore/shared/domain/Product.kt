@@ -24,6 +24,9 @@ data class Product(
     val weight: Int? = null,
     val price: Double,
     val servings: Int? = null,
+    val brand: String? = null,
+    val composition: String? = null,
+    val tags: List<String>? = null,
     @SerialName("is_popular") val isPopular: Boolean = false,
     @SerialName("is_discounted") val isDiscounted: Boolean = false,
     @SerialName("is_new") val isNew: Boolean = false

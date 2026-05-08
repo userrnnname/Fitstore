@@ -10,10 +10,12 @@ import com.fitstore.data.domain.CustomerRepository
 import com.fitstore.data.domain.OrderRepository
 import com.fitstore.data.domain.PaymentRepository
 import com.fitstore.data.domain.SupplementRepository
+import com.fitstore.shared.PaymentType
 import com.fitstore.shared.domain.Customer
-import com.fitstore.shared.domain.PaymentItem
 import com.fitstore.shared.domain.PhoneNumber
 import com.fitstore.shared.domain.SupplementTrack
+import com.fitstore.shared.payment.PaymentLauncher
+import com.fitstore.shared.payment.PaymentResult
 import com.fitstore.shared.util.RequestState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
@@ -40,11 +42,13 @@ class CheckoutViewModel(
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository,
     private val supplementRepository: SupplementRepository,
-    private val paymentLauncher: PaymentLauncher?
+    private val paymentLauncher: PaymentLauncher
 ) : ViewModel() {
 
-    var isPaymentLoading by mutableStateOf(false)
+    var currentPaymentType by mutableStateOf(PaymentType.NONE)
         private set
+
+    val isPaymentLoading get() = currentPaymentType != PaymentType.NONE
 
     var screenReady: RequestState<Unit> by mutableStateOf(RequestState.Loading)
     var screenState by mutableStateOf(CheckoutScreenState())
@@ -107,142 +111,143 @@ class CheckoutViewModel(
                     phoneNumber?.number?.length == 10
         }
 
-    fun startOnlinePayment(
-        onSuccess: (Double) -> Unit,
-        onError: (String) -> Unit
-    ) {
+    fun startOnlinePayment(onSuccess: (Double) -> Unit, onError: (String) -> Unit) {
         val amount = totalAmount.value
         val orderId = "order_${Clock.System.now().toEpochMilliseconds()}"
 
-        val paymentItems = cartItemsState.value.map { item ->
-            PaymentItem(
-                title = item.product.title,
-                price = item.product.price,
-                quantity = item.cartItem.quantity
-            )
-        }
-
-        viewModelScope.launch {
-            isPaymentLoading = true
-
-            val result = paymentRepository.preparePayment(amount, orderId, paymentItems)
-
-            result.onSuccess { paymentUrl ->
-                paymentLauncher?.launchPayment(
-                    amount = amount,
-                    orderId = orderId,
-                    paymentUrl = paymentUrl,
-                    onSuccess = { saveOrderAfterPayment(amount, onSuccess, onError) },
-                    onError = { message -> isPaymentLoading = false
-                        onError(message) }
-                )
-            }.onFailure { error ->
-                isPaymentLoading = false
-                onError("Ошибка подготовки платежа: ${error.message}")
-            }
-        }
-    }
-
-    private fun saveOrderAfterPayment(
-        amount: Double,
-        onSuccess: (Double) -> Unit,
-        onError: (String) -> Unit
-    ) {
-        updateCustomer(
-            onSuccess = {
-                createOrder(
-                    onSuccess = {
-                        isPaymentLoading = false
-                        onSuccess(amount)
-                    },
-                    onError = { error ->
-                        isPaymentLoading = false
-                        onError("Оплата прошла, но заказ не сохранен: $error")
-                    }
-                )
-            },
-            onError = { error ->
-                isPaymentLoading = false
-                onError("Ошибка обновления данных: $error")
-            }
-        )
-    }
-
-    fun payOnDelivery(
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit,
-    ) {
-        updateCustomer(
-            onSuccess = {
-                createOrder(
-                    onSuccess = onSuccess,
-                    onError = onError
-                )
-            },
-            onError = onError
-        )
-    }
-
-    private fun updateCustomer(onSuccess: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            customerRepository.updateCustomer(
-                customer = Customer(
-                    id = screenState.id,
-                    lastName = screenState.lastName,
-                    firstName = screenState.firstName,
-                    email = screenState.email,
-                    city = screenState.city,
-                    postalCode = screenState.postalCode,
-                    address = screenState.address,
-                    phoneNumber = screenState.phoneNumber,
-                    isAdmin = false
-                ),
-                onSuccess = onSuccess,
-                onError = onError
-            )
-        }
-    }
-
-    private fun createOrder(onSuccess: () -> Unit, onError: (String) -> Unit) {
-        viewModelScope.launch {
-            val userId = customerRepository.getCurrentUserId()
-            if (userId == null) {
-                onError("Пользователь не авторизован")
-                return@launch
-            }
-            val currentCartItems = cartItemsFlow.first()
-            val deliveryAddress = "${screenState.city}, ${screenState.address}"
-            val phoneNumber = screenState.phoneNumber?.number ?: ""
-            val result = orderRepository.createOrderFromCart(
-                userId = userId,
-                deliveryAddress = deliveryAddress,
-                phoneNumber = phoneNumber
-            )
-            result.onSuccess {
-                currentCartItems.forEach { item ->
-                    val product = item.product
-                    if (product.servings != null && product.servings!! > 0) {
-                        repeat(item.cartItem.quantity) {
-                            supplementRepository.addSupplementTrack(
-                                track = SupplementTrack(
-                                    customerId = userId,
-                                    productId = product.id ?: "",
-                                    productTitle = product.title,
-                                    productThumbnail = product.thumbnail,
-                                    totalServings = product.servings!!,
-                                    remainingServings = product.servings!!,
-                                    lastTakenDate = null
-                                ),
-                                onSuccess = {},
-                                onError = { error -> println("Ошибка создания трека: $error") }
-                            )
-                        }
+        paymentLauncher.launchPayment(
+            amount = amount.toString(),
+            orderId = orderId,
+            description = "Оплата заказа №$orderId в Fitstore"
+        ) { result ->
+            when (result) {
+                is PaymentResult.Success -> {
+                    viewModelScope.launch {
+                        currentPaymentType = PaymentType.ONLINE
+                        paymentRepository.confirmPayment(orderId, result.paymentToken, amount)
+                            .onSuccess {
+                                processOrderFullCycle(
+                                    amount = amount,
+                                    method = "online",
+                                    onSuccess = {
+                                        currentPaymentType = PaymentType.NONE
+                                        onSuccess(amount)
+                                    },
+                                    onError = { errorMsg ->
+                                        currentPaymentType = PaymentType.NONE
+                                        onError(errorMsg)
+                                    }
+                                )
+                            }
+                            .onFailure { error ->
+                                currentPaymentType = PaymentType.NONE
+                                onError("Ошибка подтверждения платежа: ${error.message}")
+                            }
                     }
                 }
-                onSuccess()
-            }.onFailure { e ->
-                onError(e.message ?: "Ошибка оформления заказа")
+                is PaymentResult.Error -> {
+                    onError(result.message)
+                }
+                PaymentResult.Cancelled -> {
+                    onError("Оплата отменена пользователем")
+                }
             }
+        }
+    }
+
+    fun payOnDelivery(onSuccess: (Double) -> Unit, onError: (String) -> Unit) {
+        val amountAtClick = totalAmount.value
+        viewModelScope.launch {
+            currentPaymentType = PaymentType.DELIVERY
+            processOrderFullCycle(
+                amount = amountAtClick,
+                method = "delivery",
+                onSuccess = {
+                    currentPaymentType = PaymentType.NONE
+                    onSuccess(amountAtClick)
+                },
+                onError = {
+                    currentPaymentType = PaymentType.NONE
+                    onError(it)
+                }
+            )
+        }
+    }
+
+    private suspend fun processOrderFullCycle(
+        amount: Double,
+        method: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        try {
+            updateCustomerSuspend()
+            createOrderSuspend()
+            viewModelScope.launch {
+                paymentRepository.sendEmailReceipt(
+                    orderId = "ID_${Clock.System.now().toEpochMilliseconds()}",
+                    email = screenState.email,
+                    amount = amount,
+                    method = method
+                )
+            }
+            currentPaymentType = PaymentType.NONE
+            onSuccess()
+        } catch (e: Exception) {
+            currentPaymentType = PaymentType.NONE
+            onError(e.message ?: "Непредвиденная ошибка")
+        }
+    }
+
+    private suspend fun updateCustomerSuspend() {
+        customerRepository.updateCustomer(
+            customer = Customer(
+                id = screenState.id,
+                lastName = screenState.lastName,
+                firstName = screenState.firstName,
+                email = screenState.email,
+                city = screenState.city,
+                postalCode = screenState.postalCode,
+                address = screenState.address,
+                phoneNumber = screenState.phoneNumber,
+                isAdmin = false
+            ),
+            onSuccess = {},
+            onError = { throw Exception(it) }
+        )
+    }
+
+    private suspend fun createOrderSuspend() {
+        val userId = customerRepository.getCurrentUserId() ?: throw Exception("Пользователь не авторизован")
+        val currentCartItems = cartItemsFlow.first()
+        val deliveryAddress = "${screenState.city}, ${screenState.address}"
+        val phone = screenState.phoneNumber?.number ?: ""
+
+        val result = orderRepository.createOrderFromCart(userId, deliveryAddress, phone)
+
+        if (result.isSuccess) {
+            currentCartItems.forEach { item ->
+                val product = item.product
+                if (product.servings != null && product.servings!! > 0) {
+                    repeat(item.cartItem.quantity) {
+                        supplementRepository.addSupplementTrack(
+                            track = SupplementTrack(
+                                customerId = userId,
+                                productId = product.id ?: "",
+                                productTitle = product.title,
+                                productThumbnail = product.thumbnail,
+                                totalServings = product.servings!!,
+                                remainingServings = product.servings!!,
+                                lastTakenDate = null,
+                            ),
+                            onSuccess = {},
+                            onError = { println("Ошибка трека: $it") }
+                        )
+                    }
+                }
+            }
+        } else {
+            throw Exception(result.exceptionOrNull()?.message ?: "Ошибка базы данных")
         }
     }
 

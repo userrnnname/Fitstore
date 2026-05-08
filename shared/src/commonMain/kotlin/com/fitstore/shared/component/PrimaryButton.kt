@@ -1,6 +1,8 @@
 package com.fitstore.shared.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -8,10 +10,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemDefaults.contentColor
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -33,13 +38,14 @@ fun PrimaryButton(
     text: String,
     icon: DrawableResource? = null,
     enabled: Boolean = true,
+    isLoading: Boolean = false,
     secondary: Boolean = false,
     onClick: () -> Unit,
 ) {
     Button(
         modifier = modifier.fillMaxWidth(),
         onClick = onClick,
-        enabled = enabled,
+        enabled = enabled && !isLoading,
         shape = RoundedCornerShape(size = 6.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (secondary) ButtonSecondary else ButtonPrimary,
@@ -49,20 +55,31 @@ fun PrimaryButton(
         ),
         contentPadding = PaddingValues(all = 20.dp)
     ) {
-        if (icon != null) {
-            Icon(
-                modifier = Modifier.size(14.dp),
-                painter = painterResource(icon),
-                contentDescription = "Button icon",
-                tint = LocalContentColor.current
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = contentColor
+                )
+            } else if (icon != null) {
+                Icon(
+                    modifier = Modifier.size(14.dp),
+                    painter = painterResource(icon),
+                    contentDescription = "Button icon",
+                    tint = LocalContentColor.current
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = text,
+                fontSize = FontSize.REGULAR,
+                fontWeight = FontWeight.Medium,
+                color = LocalContentColor.current
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = text,
-            fontSize = FontSize.REGULAR,
-            fontWeight = FontWeight.Medium,
-            color = LocalContentColor.current
-        )
     }
 }

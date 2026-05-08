@@ -252,7 +252,7 @@ fun SupplementCard(
                                 enabled = isEnabled,
                                 onClick = onTakeServing
                             )
-                            .wrapContentHeight(), // Чтобы текст был по центру высоты 32.dp
+                            .wrapContentHeight(),
                         style = TextStyle(
                             color = if (isEnabled) TextPrimary else TextWhite,
                             fontSize = FontSize.EXTRA_REGULAR,

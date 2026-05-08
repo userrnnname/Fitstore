@@ -18,7 +18,6 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
 
@@ -114,7 +113,7 @@ class SupplementRepositoryImpl(
             supabase.from("supplement_tracks").delete {
                 filter { eq("id", trackId) }
             }
-            onSuccess()
+            onSuccess( )
         } catch (e: Exception) {
             onError("Ошибка при удалении: ${e.message}")
         }

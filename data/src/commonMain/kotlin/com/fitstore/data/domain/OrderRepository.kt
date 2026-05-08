@@ -7,7 +7,7 @@ interface OrderRepository {
     suspend fun createOrderFromCart(
         userId: String,
         deliveryAddress: String,
-        phoneNumber: String,
+        phoneNumber: String
     ): Result<Order>
     suspend fun getLastPurchasedProducts(userId: String, limit: Int = 3): List<Product>
 }

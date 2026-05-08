@@ -1,12 +1,14 @@
 package com.fitstore.di
 
 
+import FavoriteRepositoryImpl
+import SearchHistoryRepositoryImpl
 import com.fitstore.admin_panel.AdminPanelViewModel
 import com.fitstore.auth.AuthViewModel
 import com.fitstore.cart.CartViewModel
 import com.fitstore.category_search.CategorySearchViewModel
 import com.fitstore.checkout.CheckoutViewModel
-import com.fitstore.checkout.PaymentLauncher
+import com.fitstore.shared.payment.PaymentLauncher
 import com.fitstore.data.AdminRepositoryImpl
 import com.fitstore.data.CartRepositoryImpl
 import com.fitstore.data.CustomerRepositoryImpl
@@ -19,9 +21,11 @@ import com.fitstore.data.domain.CartRepository
 import com.fitstore.data.domain.PaymentRepository
 import com.fitstore.data.domain.AdminRepository
 import com.fitstore.data.domain.CustomerRepository
+import com.fitstore.data.domain.FavoriteRepository
 import com.fitstore.data.domain.ImageRepository
 import com.fitstore.data.domain.OrderRepository
 import com.fitstore.data.domain.ProductRepository
+import com.fitstore.data.domain.SearchHistoryRepository
 import com.fitstore.data.domain.SupplementRepository
 import com.fitstore.details.DetailsViewModel
 import com.fitstore.edit_profile.EditProfileViewModel
@@ -91,6 +95,16 @@ val sharedModule = module {
         supabase = get(),
         notifications = get()
     ) }
+    single<FavoriteRepository> {
+        FavoriteRepositoryImpl(
+            supabase = get()
+        )
+    }
+    single<SearchHistoryRepository> {
+        SearchHistoryRepositoryImpl(
+            supabase = get()
+        )
+    }
     viewModelOf(::AuthViewModel)
     viewModelOf(::HomeGraphViewModel)
     viewModelOf(::ProfileViewModel)
@@ -104,7 +118,7 @@ val sharedModule = module {
     viewModelOf(::CartViewModel)
     viewModelOf(::CategorySearchViewModel)
     viewModelOf(::PaymentCompletedViewModel)
-    viewModel { (launcher: PaymentLauncher?) ->
+    viewModel { (launcher: PaymentLauncher) ->
         CheckoutViewModel(
             paymentRepository = get(),
             customerRepository = get(),

@@ -1,6 +1,7 @@
 package com.android.fitstore
 
 import android.Manifest
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.fitstore.checkout.PaymentLauncher
+import com.fitstore.shared.payment.PaymentLauncher
 
 class MainActivity : ComponentActivity() {
     private lateinit var paymentLauncher: PaymentLauncher
@@ -22,41 +23,46 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.light(
-                Color.Transparent.toArgb(),
                 Color.Transparent.toArgb()
             ),
             navigationBarStyle = SystemBarStyle.light(
-                Color.Transparent.toArgb(),
                 Color.Transparent.toArgb()
             )
         )
         super.onCreate(savedInstanceState)
+        paymentLauncher = PaymentLauncher(
+            clientApplicationKey = "live_ВАШ_КЛЮЧ_ДЛЯ_SDK",
+            shopId = "ВАШ_SHOP_ID"
+        )
+        paymentLauncher.attachActivity(this)
+
         val requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) {
-                // Разрешение получено, можно уведомлять пользователя
-            } else {
-                // Пользователь отказал
-            }
+        ) { isGranted ->
+            // Логика обработки разрешения
         }
 
-            
-        paymentLauncher = PaymentLauncher(this)
-        paymentLauncher.initialize()
         setContent {
             LaunchedEffect(Unit) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
-            App(androidLauncher = paymentLauncher)
+            App(paymentLauncher = paymentLauncher)
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (::paymentLauncher.isInitialized) {
+            paymentLauncher.processActivityResult(requestCode, resultCode, data)
         }
     }
 }
 
-@Preview
+
+@Preview(showBackground = true)
 @Composable
 fun AppAndroidPreview() {
-    App()
+
 }

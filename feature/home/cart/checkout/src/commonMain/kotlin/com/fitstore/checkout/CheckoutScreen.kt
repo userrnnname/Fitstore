@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.fitstore.shared.FontSize
 import com.fitstore.shared.IconPrimary
 import com.fitstore.shared.K2DFont
+import com.fitstore.shared.PaymentType
 import com.fitstore.shared.Resources
 import com.fitstore.shared.Surface
 import com.fitstore.shared.SurfaceBrand
@@ -34,6 +35,7 @@ import com.fitstore.shared.TextPrimary
 import com.fitstore.shared.TextWhite
 import com.fitstore.shared.component.PrimaryButton
 import com.fitstore.shared.component.ProfileForm
+import com.fitstore.shared.payment.PaymentLauncher
 import com.fitstore.shared.util.formatPrice
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -45,7 +47,7 @@ import rememberMessageBarState
 fun CheckoutScreen(
     navigateBack: () -> Unit,
     navigateToPaymentCompleted: (Boolean?, String?, Double?) -> Unit,
-    paymentLauncher: PaymentLauncher?
+    paymentLauncher: PaymentLauncher
 ) {
     val messageBarState = rememberMessageBarState()
     val viewModel = koinViewModel<CheckoutViewModel>{ parametersOf(paymentLauncher) }
@@ -53,9 +55,6 @@ fun CheckoutScreen(
     val totalAmount by viewModel.totalAmount.collectAsState()
     val isFormValid = viewModel.isFormValid
     val isPaymentLoading = viewModel.isPaymentLoading
-    LaunchedEffect(paymentLauncher) {
-        paymentLauncher?.initialize()
-    }
 
     Scaffold(
         containerColor = Surface,
@@ -141,9 +140,10 @@ fun CheckoutScreen(
                 )
                 Column {
                     PrimaryButton(
-                        text = if (viewModel.isPaymentLoading) "Загрузка..." else "Оплатить онлайн",
+                        text = "Оплатить онлайн",
                         icon = Resources.Icon.CreditCard,
-                        enabled = isFormValid && !isPaymentLoading && totalAmount > 0,
+                        isLoading = viewModel.currentPaymentType == PaymentType.ONLINE,
+                        enabled = isFormValid && totalAmount > 0,
                         onClick = {
                             viewModel.startOnlinePayment(
                                 onSuccess = { amount ->
@@ -160,11 +160,12 @@ fun CheckoutScreen(
                         text = "Оплата при доставке",
                         icon = Resources.Icon.ShoppingCart,
                         secondary = true,
-                        enabled = isFormValid && !isPaymentLoading && totalAmount > 0,
+                        isLoading = viewModel.currentPaymentType == PaymentType.DELIVERY,
+                        enabled = isFormValid && totalAmount > 0,
                         onClick = {
                             viewModel.payOnDelivery(
-                                onSuccess = {
-                                    navigateToPaymentCompleted(true, null, totalAmount)
+                                onSuccess = { amount ->
+                                    navigateToPaymentCompleted(true, null, amount)
                                 },
                                 onError = { error ->
                                     navigateToPaymentCompleted(null, error, null)

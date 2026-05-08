@@ -1,7 +1,7 @@
 package com.fitstore.di
 
 import androidx.activity.ComponentActivity
-import com.fitstore.checkout.PaymentLauncher
+import com.fitstore.shared.payment.PaymentLauncher
 import com.fitstore.manage_product.PhotoPicker
 import org.koin.dsl.module
 

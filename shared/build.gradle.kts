@@ -34,9 +34,11 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.messaging)
+            implementation(libs.yoomoney)
         }
         iosMain.dependencies {
             implementation(libs.ktor.darwin.client)
+
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

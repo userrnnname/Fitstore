@@ -27,7 +27,11 @@ fun createAndConfigureSupabaseClient(
         this.httpEngine = httpEngine
         httpConfig {
             install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
+                json(Json {
+                    prettyPrint = true
+                    isLenient = true
+                    ignoreUnknownKeys = true
+                })
             }
             install(Logging) { level = LogLevel.ALL }
             install(WebSockets)

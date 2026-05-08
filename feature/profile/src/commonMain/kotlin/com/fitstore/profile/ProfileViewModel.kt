@@ -130,7 +130,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             supplementRepository.deleteSupplementTrack(
                 trackId = id,
-                onSuccess = {},
+                onSuccess = { },
                 onError = onError
             )
         }

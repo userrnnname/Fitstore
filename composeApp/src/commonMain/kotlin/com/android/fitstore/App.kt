@@ -7,7 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import co.touchlab.kermit.Logger.Companion.log
-import com.fitstore.checkout.PaymentLauncher
+import com.fitstore.shared.payment.PaymentLauncher
 import com.fitstore.data.domain.CustomerRepository
 import com.fitstore.shared.navigation.Screen
 import com.fitstore.navigation.SetupNavGraph
@@ -19,7 +19,7 @@ import org.koin.compose.koinInject
 
 @Composable
 @Preview
-fun App(androidLauncher: PaymentLauncher? = null) {
+fun App(paymentLauncher: PaymentLauncher) {
     MaterialTheme {
         val customerRepository = koinInject<CustomerRepository>()
         var appReady by remember { mutableStateOf(false) }
@@ -39,7 +39,7 @@ fun App(androidLauncher: PaymentLauncher? = null) {
         ) {
             SetupNavGraph(
                 startDestination = startDestination,
-                paymentLauncher = androidLauncher
+                paymentLauncher = paymentLauncher
             )
         }
         val notifications = koinInject<PlatformNotification>()

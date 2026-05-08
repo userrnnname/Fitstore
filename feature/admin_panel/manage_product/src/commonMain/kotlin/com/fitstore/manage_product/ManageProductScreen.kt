@@ -370,12 +370,16 @@ fun ManageProductScreen(
                             keyboardType = KeyboardType.Number
                         )
                     )
-                    CustomTextField(
-                        value = screenState.servingsString,
-                        onValueChange = viewModel::updateServingsString,
-                        placeholder = "Количество порций",
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
+                    AnimatedVisibility(
+                        visible = screenState.category != ProductCategory.Accessories
+                    ) {
+                        CustomTextField(
+                            value = screenState.servingsString,
+                            onValueChange = viewModel::updateServingsString,
+                            placeholder = "Количество порций",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                    }
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(24.dp)

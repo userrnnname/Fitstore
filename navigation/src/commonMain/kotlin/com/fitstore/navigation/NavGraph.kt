@@ -14,17 +14,17 @@ import com.fitstore.edit_profile.EditProfileScreen
 import com.fitstore.home.HomeGraphScreen
 import com.fitstore.login.LoginScreen
 import com.fitstore.manage_product.ManageProductScreen
-import com.fitstore.checkout.PaymentLauncher
 import com.fitstore.payment_completed.PaymentCompletedScreen
 import com.fitstore.profile.ProfileScreen
 import com.fitstore.register.RegisterScreen
 import com.fitstore.shared.domain.ProductCategory
 import com.fitstore.shared.navigation.Screen
+import com.fitstore.shared.payment.PaymentLauncher
 
 @Composable
 fun SetupNavGraph (
     startDestination: Screen = Screen.Auth,
-    paymentLauncher: PaymentLauncher? = null
+    paymentLauncher: PaymentLauncher
 )
 {
     val navController = rememberNavController()
